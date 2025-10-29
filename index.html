@@ -1,0 +1,91 @@
+<!doctype html>
+<html>
+  <head>
+    <meta charset="UTF-8" />
+    <title>考勤管理</title>
+
+  </head>
+  <body>
+    <div class="top-bar">
+      <div class="app-title">考勤管理</div>
+      <div class="top-bar-menu">
+        <div class="settings-menu-container">
+          <button id="settings-menu-btn" class="top-bar-btn">
+            <span>设置</span>
+            <span class="menu-arrow">▼</span>
+          </button>
+          <div id="settings-dropdown" class="settings-dropdown hidden">
+            <div class="dropdown-header">设置选项</div>
+            <button id="view-cookies-menu-item" class="dropdown-menu-item">
+              <span>📋</span>
+              <span>查看 Cookie</span>
+            </button>
+            <button id="clear-cookies-menu-item" class="dropdown-menu-item danger">
+              <span>🗑️</span>
+              <span>清空 Cookie</span>
+            </button>
+          </div>
+        </div>
+        <div class="user-menu-container">
+          <button id="user-menu-btn" class="top-bar-btn">
+            <span id="user-display-name">未登录</span>
+            <span class="menu-arrow">▼</span>
+          </button>
+          <div id="user-dropdown" class="user-dropdown hidden">
+            <div class="dropdown-header">用户信息</div>
+            <div class="dropdown-item">
+              <span class="item-label">公司：</span>
+              <span id="dropdown-company" class="item-value">-</span>
+            </div>
+            <div class="dropdown-item">
+              <span class="item-label">员工：</span>
+              <span id="dropdown-employee" class="item-value">-</span>
+            </div>
+            <div class="dropdown-divider"></div>
+            <div class="dropdown-item">
+              <span class="item-label">CSRF Token：</span>
+              <div id="dropdown-csrf" class="item-value csrf-value">-</div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+    <div class="container">
+      <div class="left-content">
+        <div id="calendar-container" class="calendar-container"></div>
+      </div>
+      <div id="webview-container"></div>
+    </div>
+
+    <!-- Cookie Dialog Modal -->
+    <div id="cookie-dialog" class="dialog-overlay hidden">
+      <div class="dialog-container">
+        <div class="dialog-header">
+          <h3>Cookie 管理</h3>
+          <button id="close-dialog-btn" class="dialog-close-btn">✕</button>
+        </div>
+        <div class="dialog-body">
+          <div id="cookie-dialog-display" class="cookie-dialog-display"></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Floating Action Button -->
+    <button id="quick-checkin-fab" class="fab">一键打卡</button>
+
+    <!-- Quick Check-in Dialog -->
+    <div id="checkin-dialog" class="dialog-overlay hidden">
+      <div class="dialog-container checkin-dialog-container">
+        <div class="dialog-header">
+          <h3 id="checkin-dialog-title">一键打卡</h3>
+          <button id="checkin-dialog-close-btn" class="dialog-close-btn">✕</button>
+        </div>
+        <div class="dialog-body">
+          <div id="checkin-dialog-content" class="checkin-dialog-content"></div>
+        </div>
+      </div>
+    </div>
+
+    <script type="module" src="/src/renderer.ts"></script>
+  </body>
+</html>
