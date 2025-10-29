@@ -1,0 +1,78 @@
+name: Build
+
+on:
+  push:
+    branches:
+      - main
+      - develop
+  pull_request:
+    branches:
+      - main
+      - develop
+  workflow_dispatch:
+
+jobs:
+  build:
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          # macOS builds
+          - os: macos-latest
+            arch: x64
+            platform: darwin
+          - os: macos-latest
+            arch: arm64
+            platform: darwin
+
+          # Windows builds
+          - os: windows-latest
+            arch: x64
+            platform: win32
+          - os: windows-latest
+            arch: arm64
+            platform: win32
+
+    runs-on: ${{ matrix.os }}
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm'
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Build application
+        run: npm run make -- --arch=${{ matrix.arch }}
+        env:
+          ARCH: ${{ matrix.arch }}
+
+      - name: Upload artifacts (macOS)
+        if: matrix.platform == 'darwin'
+        uses: actions/upload-artifact@v4
+        with:
+          name: autobdk-gui-${{ matrix.platform }}-${{ matrix.arch }}
+          path: |
+            out/make/**/*.zip
+          retention-days: 30
+
+      - name: Upload artifacts (Windows)
+        if: matrix.platform == 'win32'
+        uses: actions/upload-artifact@v4
+        with:
+          name: autobdk-gui-${{ matrix.platform }}-${{ matrix.arch }}
+          path: |
+            out/make/**/*.exe
+          retention-days: 30
+
+      - name: List build outputs
+        shell: bash
+        run: |
+          echo "Build outputs:"
+          ls -R out/make || true
