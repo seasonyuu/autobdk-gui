@@ -169,7 +169,7 @@ export class CheckinDialog {
   /**
    * 更新单个补签项的状态
    */
-  updateItem(index: number, item: ApprovalItem): void {
+  updateItem(index: number, item: ApprovalItem, allItems?: ApprovalItem[]): void {
     const itemElements = this.content.querySelectorAll('.checkin-item');
     if (!itemElements || !itemElements[index]) return;
 
@@ -192,6 +192,20 @@ export class CheckinDialog {
 
     if (iconEl) iconEl.textContent = icon;
     if (statusEl) statusEl.textContent = statusText;
+
+    // 更新进度统计
+    if (allItems) {
+      const completedCount = allItems.filter(
+        (i) => i.status === 'success' || i.status === 'error'
+      ).length;
+      const summaryEl = this.content.querySelector('.checkin-summary');
+      if (summaryEl) {
+        summaryEl.textContent = `已完成: ${completedCount}/${allItems.length}`;
+      }
+    }
+
+    // 自动滚动到当前项
+    itemEl.scrollIntoView({ behavior: 'smooth', block: 'center' });
   }
 
   /**
