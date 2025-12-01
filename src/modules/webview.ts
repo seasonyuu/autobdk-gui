@@ -24,7 +24,7 @@ export class WebViewManager {
     const containerHeight = this.container.clientHeight;
 
     const webContentsId = this.webview.getWebContentsId();
-    (window as any).electronAPI?.enableDeviceEmulation?.(
+    window.electronAPI?.enableDeviceEmulation?.(
       webContentsId,
       containerWidth,
       containerHeight
@@ -75,7 +75,7 @@ export class WebViewManager {
 
         // Start monitoring cookies
         const webContentsId = this.webview.getWebContentsId();
-        (window as any).electronAPI?.startCookieMonitoring?.(webContentsId);
+        window.electronAPI?.startCookieMonitoring?.(webContentsId);
         console.log('Cookie monitoring started');
       }
     });

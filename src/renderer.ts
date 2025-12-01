@@ -72,7 +72,7 @@ async function loadAttendanceForMonth(offset: number): Promise<void> {
   calendarManager.showLoading();
 
   try {
-    const result = await (window as any).electronAPI?.getAttendanceRecords?.(csrf, targetYearmo);
+    const result = await window.electronAPI?.getAttendanceRecords?.(csrf, targetYearmo);
 
     if (result?.success && result.data) {
       console.log('Attendance records fetched successfully');
@@ -102,7 +102,7 @@ async function loadCurrentMonthAttendance(): Promise<void> {
   calendarManager.showLoading();
 
   try {
-    const result = await (window as any).electronAPI?.getAttendanceRecords?.(csrf);
+    const result = await window.electronAPI?.getAttendanceRecords?.(csrf);
 
     if (result?.success && result.data) {
       console.log('Attendance records fetched successfully');
@@ -320,7 +320,7 @@ if (checkinDialog) {
 verifyCookiesAndShowInfo(true);
 
 // Listen for cookie updates and re-verify (without cookie clearing)
-(window as any).electronAPI?.onCookiesUpdated?.(() => {
+window.electronAPI?.onCookiesUpdated?.(() => {
   console.log('Cookies updated, re-verifying...');
   verifyCookiesAndShowInfo(false);
 });
