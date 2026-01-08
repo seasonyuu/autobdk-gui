@@ -9,6 +9,9 @@ if (started) {
   app.quit();
 }
 
+const isDev = process.env.NODE_ENV === 'development';
+const rendererDevServerUrl = process.env.VITE_DEV_SERVER_URL;
+
 // Register all IPC handlers
 registerIpcHandlers();
 
@@ -19,7 +22,7 @@ const createWindow = async () => {
     height: 600,
     icon: path.join(__dirname, '../assets/icons/512x512.png'),
     webPreferences: {
-      preload: path.join(__dirname, 'preload.js'),
+      preload: path.join(__dirname, '../preload/index.js'),
       webviewTag: true,
     },
   });
@@ -28,12 +31,10 @@ const createWindow = async () => {
   await cookieStore.restoreToSession();
 
   // and load the index.html of the app.
-  if (MAIN_WINDOW_VITE_DEV_SERVER_URL) {
-    mainWindow.loadURL(MAIN_WINDOW_VITE_DEV_SERVER_URL);
+  if (isDev && rendererDevServerUrl) {
+    mainWindow.loadURL(rendererDevServerUrl);
   } else {
-    mainWindow.loadFile(
-      path.join(__dirname, `../renderer/${MAIN_WINDOW_VITE_NAME}/index.html`),
-    );
+    mainWindow.loadFile(path.join(__dirname, '../renderer/index.html'));
   }
 
   // Open the DevTools.

@@ -1,4 +1,13 @@
+import path from 'node:path';
 import { defineConfig } from 'vite';
 
-// https://vitejs.dev/config
-export default defineConfig({});
+export default defineConfig({
+  base: './',
+  build: {
+    outDir: 'dist/renderer',
+    emptyOutDir: false,
+    rollupOptions: {
+      input: path.resolve(__dirname, 'index.html'),
+    },
+  },
+});

@@ -16,6 +16,8 @@ on:
 
 jobs:
   build:
+    env:
+      GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
     strategy:
       fail-fast: false
       matrix:
@@ -36,6 +38,11 @@ jobs:
             arch: arm64
             platform: win32
 
+          # Linux builds
+          - os: ubuntu-latest
+            arch: x64
+            platform: linux
+
     runs-on: ${{ matrix.os }}
 
     steps:
@@ -50,11 +57,30 @@ jobs:
 
       - name: Install dependencies
         run: npm ci
+      
+      - name: Install Flatpak tooling
+        if: matrix.platform == 'linux'
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y flatpak flatpak-builder elfutils libarchive-tools
+
+      - name: Setup Flatpak runtimes (user scope)
+        if: matrix.platform == 'linux'
+        run: |
+          flatpak --user remote-add --if-not-exists flathub https://dl.flathub.org/repo/flathub.flatpakrepo
+          flatpak --user --noninteractive install flathub org.freedesktop.Platform//25.08 org.freedesktop.Sdk//25.08 org.electronjs.Electron2.BaseApp//25.08
 
       - name: Build application
-        run: npm run make -- --arch=${{ matrix.arch }}
-        env:
-          ARCH: ${{ matrix.arch }}
+        shell: bash
+        run: |
+          if [[ "${{ matrix.platform }}" == "darwin" ]]; then
+            TARGET="mac"
+          elif [[ "${{ matrix.platform }}" == "win32" ]]; then
+            TARGET="win"
+          else
+            TARGET="linux"
+          fi
+          npm run dist -- --${TARGET} --${{ matrix.arch }}
 
       - name: Upload artifacts (macOS)
         if: matrix.platform == 'darwin'
@@ -62,7 +88,7 @@ jobs:
         with:
           name: autobdk-gui-${{ matrix.platform }}-${{ matrix.arch }}
           path: |
-            out/make/**/*.zip
+            release/*.zip
           retention-days: 30
 
       - name: Upload artifacts (Windows)
@@ -71,14 +97,24 @@ jobs:
         with:
           name: autobdk-gui-${{ matrix.platform }}-${{ matrix.arch }}
           path: |
-            out/make/**/*.exe
+            release/*.exe
+          retention-days: 30
+
+      - name: Upload artifacts (Linux)
+        if: matrix.platform == 'linux'
+        uses: actions/upload-artifact@v4
+        with:
+          name: autobdk-gui-${{ matrix.platform }}-${{ matrix.arch }}
+          path: |
+            release/*.AppImage
+            release/*.flatpak
           retention-days: 30
 
       - name: List build outputs
         shell: bash
         run: |
           echo "Build outputs:"
-          ls -R out/make || true
+          ls -R release || true
 
   release:
     name: Create Release
