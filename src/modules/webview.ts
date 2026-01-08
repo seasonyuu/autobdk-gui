@@ -143,6 +143,27 @@ export class WebViewManager {
   }
 
   /**
+   * 强制显示登录页（若未创建则创建）
+   */
+  showLoginPage(): void {
+    if (!this.webview) {
+      this.create();
+    }
+    if (!this.webview) return;
+
+    // 确保容器显示
+    this.container.style.display = 'flex';
+
+    // 在当前任务队列后聚焦并加载登录页
+    setTimeout(() => {
+      this.webview?.focus();
+      if (this.webview && this.webview.getURL() !== 'https://e.xinrenxinshi.com/') {
+        this.webview.loadURL('https://e.xinrenxinshi.com/');
+      }
+    }, 0);
+  }
+
+  /**
    * 检查 WebView 是否已创建
    */
   isCreated(): boolean {
