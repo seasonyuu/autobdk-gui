@@ -149,6 +149,8 @@ jobs:
           # Find and rename files for release
           find artifacts -name "*.zip" -exec cp {} release-assets/ \;
           find artifacts -name "*.exe" -exec cp {} release-assets/ \;
+          find artifacts -name "*.AppImage" -exec cp {} release-assets/ \;
+          find artifacts -name "*.flatpak" -exec cp {} release-assets/ \;
 
           # Rename files with platform and arch information
           cd release-assets
