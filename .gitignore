@@ -87,6 +87,13 @@ typings/
 
 # Vite
 .vite/
+dist/
 
 # Electron-Forge
 out/
+
+# Electron-Builder
+release/
+
+# Flatpak
+.flatpak-builder/

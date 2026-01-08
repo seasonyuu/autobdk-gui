@@ -1,0 +1,40 @@
+appId: com.autobdk.gui
+productName: autobdk-gui
+directories:
+  output: release
+  buildResources: assets/icons
+files:
+  - dist/**
+  - package.json
+asar: true
+artifactName: '${productName}-${os}-${arch}-${version}.${ext}'
+mac:
+  target:
+    - zip
+  icon: assets/icons/icon.icns
+  category: public.app-category.productivity
+win:
+  target:
+    - nsis
+  icon: assets/icons/icon.ico
+linux:
+  target:
+    - AppImage
+    - flatpak
+  icon: assets/icons
+  category: Utility
+flatpak:
+  runtime: org.freedesktop.Platform
+  runtimeVersion: '25.08'
+  sdk: org.freedesktop.Sdk
+  base: org.electronjs.Electron2.BaseApp
+  baseVersion: '25.08'
+  branch: stable
+  finishArgs:
+    - --share=network
+    - --share=ipc
+    - --socket=fallback-x11
+    - --socket=wayland
+    - --device=all
+    - --filesystem=home
+    - --talk-name=org.freedesktop.Notifications
