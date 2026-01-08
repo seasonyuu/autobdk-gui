@@ -823,6 +823,11 @@ body {
   justify-content: flex-end;
   padding-top: 1rem;
   border-top: 1px solid #e0e0e0;
+  position: sticky;
+  bottom: 0;
+  background-color: white;
+  z-index: 10;
+  padding-bottom: 1px; /* Fix for some browsers */
 }
 
 .checkin-btn {

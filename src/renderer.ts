@@ -31,6 +31,7 @@ const dropdownCsrf = document.getElementById('dropdown-csrf') as HTMLDivElement;
 const settingsMenuBtn = document.getElementById('settings-menu-btn') as HTMLButtonElement;
 const settingsDropdown = document.getElementById('settings-dropdown') as HTMLDivElement;
 const viewCookiesMenuItem = document.getElementById('view-cookies-menu-item') as HTMLButtonElement;
+const openLoginMenuItem = document.getElementById('open-login-menu-item') as HTMLButtonElement;
 const clearCookiesMenuItem = document.getElementById('clear-cookies-menu-item') as HTMLButtonElement;
 
 // Cookie dialog elements
@@ -51,6 +52,7 @@ const authManager = new AuthManager();
 const calendarManager = new CalendarManager(calendarContainer);
 const webviewManager = new WebViewManager(webviewContainer, leftContent, quickCheckinFab);
 const cookieManager = new CookieManager();
+let hasLoginPromptShown = false;
 
 // ==================== Helper Functions ====================
 
@@ -72,7 +74,7 @@ async function loadAttendanceForMonth(offset: number): Promise<void> {
   calendarManager.showLoading();
 
   try {
-    const result = await (window as any).electronAPI?.getAttendanceRecords?.(csrf, targetYearmo);
+    const result = await window.electronAPI?.getAttendanceRecords?.(csrf, targetYearmo);
 
     if (result?.success && result.data) {
       console.log('Attendance records fetched successfully');
@@ -102,7 +104,7 @@ async function loadCurrentMonthAttendance(): Promise<void> {
   calendarManager.showLoading();
 
   try {
-    const result = await (window as any).electronAPI?.getAttendanceRecords?.(csrf);
+    const result = await window.electronAPI?.getAttendanceRecords?.(csrf);
 
     if (result?.success && result.data) {
       console.log('Attendance records fetched successfully');
@@ -129,6 +131,7 @@ async function verifyCookiesAndShowInfo(clearOnFailure: boolean = false): Promis
     const result = await authManager.verifyCookies(clearOnFailure);
 
     if (result?.success && result.data) {
+      hasLoginPromptShown = false; // 登录成功后允许下次再次提示
       // Update top bar display
       authManager.updateTopBarDisplay(userDisplayName, 'loggedIn');
 
@@ -147,6 +150,25 @@ async function verifyCookiesAndShowInfo(clearOnFailure: boolean = false): Promis
 
       // Create WebView when login fails
       webviewManager.create();
+
+      // 提示用户跳转登录（只提示一次，避免反复打扰）
+      if (!hasLoginPromptShown) {
+        hasLoginPromptShown = true;
+        const confirmLogin = window.confirm('登录状态已失效，需要重新登录。\n是否前往登录页？');
+        if (confirmLogin) {
+          // 重新创建 WebView，保证容器有内容且可见
+          webviewManager.destroy();
+          webviewManager.create();
+          const webview = webviewManager.getWebView();
+          setTimeout(() => {
+            webview?.focus();
+            // 确保加载登录页
+            if (webview && webview.getURL() !== 'https://e.xinrenxinshi.com/') {
+              webview.loadURL('https://e.xinrenxinshi.com/');
+            }
+          }, 0);
+        }
+      }
     }
   } catch (error) {
     // Update top bar to show error
@@ -156,6 +178,23 @@ async function verifyCookiesAndShowInfo(clearOnFailure: boolean = false): Promis
 
     // Create WebView on verification error
     webviewManager.create();
+
+    // 出错时也提示一次跳转
+    if (!hasLoginPromptShown) {
+      hasLoginPromptShown = true;
+      const confirmLogin = window.confirm('验证出错，需要重新登录。\n是否前往登录页？');
+      if (confirmLogin) {
+        webviewManager.destroy();
+        webviewManager.create();
+        const webview = webviewManager.getWebView();
+        setTimeout(() => {
+          webview?.focus();
+          if (webview && webview.getURL() !== 'https://e.xinrenxinshi.com/') {
+            webview.loadURL('https://e.xinrenxinshi.com/');
+          }
+        }, 0);
+      }
+    }
   }
 }
 
@@ -170,6 +209,16 @@ if (settingsMenuBtn && settingsDropdown) {
 
   settingsDropdown.addEventListener('click', (e) => {
     e.stopPropagation();
+  });
+}
+
+// Open login page menu item
+if (openLoginMenuItem) {
+  openLoginMenuItem.addEventListener('click', () => {
+    settingsDropdown?.classList.add('hidden');
+    // 强制重建 WebView 并加载登录页
+    webviewManager.destroy();
+    webviewManager.showLoginPage();
   });
 }
 
@@ -320,7 +369,7 @@ if (checkinDialog) {
 verifyCookiesAndShowInfo(true);
 
 // Listen for cookie updates and re-verify (without cookie clearing)
-(window as any).electronAPI?.onCookiesUpdated?.(() => {
+window.electronAPI?.onCookiesUpdated?.(() => {
   console.log('Cookies updated, re-verifying...');
   verifyCookiesAndShowInfo(false);
 });

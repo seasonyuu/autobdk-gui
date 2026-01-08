@@ -22,7 +22,7 @@ export class AttendanceAnalyzer {
     const approvalList: ApprovalItem[] = [];
 
     // 1. 获取考勤记录列表
-    const result = await (window as any).electronAPI?.getAttendanceRecords?.(
+    const result = await window.electronAPI?.getAttendanceRecords?.(
       this.csrf,
       this.yearmo
     );
@@ -55,7 +55,7 @@ export class AttendanceAnalyzer {
 
     // 获取该日期的详细打卡信息
     const dateStr = this.formatDateForAPI(recordTime);
-    const detailResult = await (window as any).electronAPI?.getAttendanceRecordByDate?.(
+    const detailResult = await window.electronAPI?.getAttendanceRecordByDate?.(
       this.csrf,
       dateStr
     );
@@ -79,7 +79,7 @@ export class AttendanceAnalyzer {
     }
 
     // 获取已有的补签记录
-    const bdkResult = await (window as any).electronAPI?.getApproveBdkFlow?.(
+    const bdkResult = await window.electronAPI?.getApproveBdkFlow?.(
       this.csrf,
       `${recordTime}`
     );

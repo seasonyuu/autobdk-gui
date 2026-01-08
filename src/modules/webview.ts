@@ -7,6 +7,8 @@ export class WebViewManager {
   private isEnvReady = false;
   private resizeObserver: ResizeObserver | null = null;
   private resizeTimeout: number | null = null;
+  private readonly mobileUserAgent =
+    'Mozilla/5.0 (Linux; Android 13; Pixel 7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/141.0.0.0 Mobile Safari/537.36';
 
   constructor(
     private container: HTMLDivElement,
@@ -24,7 +26,7 @@ export class WebViewManager {
     const containerHeight = this.container.clientHeight;
 
     const webContentsId = this.webview.getWebContentsId();
-    (window as any).electronAPI?.enableDeviceEmulation?.(
+    window.electronAPI?.enableDeviceEmulation?.(
       webContentsId,
       containerWidth,
       containerHeight
@@ -39,33 +41,43 @@ export class WebViewManager {
   create(): void {
     if (this.webview) return; // Already created
 
-    console.log('Creating WebView...');
+    try {
+      console.log('Creating WebView...');
 
-    // Hide left content and FAB when showing WebView
-    if (this.leftContent) {
-      this.leftContent.classList.add('hidden');
+      // Hide left content and FAB when showing WebView
+      if (this.leftContent) {
+        this.leftContent.classList.add('hidden');
+      }
+      if (this.fab) {
+        this.fab.classList.add('hidden');
+      }
+
+      // 确保容器可见
+      this.container.style.display = 'flex';
+
+      this.webview = document.createElement('webview');
+      this.webview.id = 'mobile-webview';
+      this.webview.className = 'mobile-webview';
+      this.webview.setAttribute('partition', 'persist:mobile');
+      // 通过属性提前设置 UA，避免提前调用 getWebContentsId 触发错误
+      this.webview.setAttribute('useragent', this.mobileUserAgent);
+      this.webview.src = 'https://e.xinrenxinshi.com';
+
+      this.container.appendChild(this.webview);
+      console.log('WebView appended, container children:', this.container.childElementCount);
+    } catch (err) {
+      console.error('Failed to create WebView:', err);
+      this.webview = null;
+      return;
     }
-    if (this.fab) {
-      this.fab.classList.add('hidden');
-    }
-
-    this.webview = document.createElement('webview');
-    this.webview.id = 'mobile-webview';
-    this.webview.className = 'mobile-webview';
-    this.webview.src = 'https://e.xinrenxinshi.com';
-    this.webview.setAttribute('partition', 'persist:mobile');
-
-    this.container.appendChild(this.webview);
 
     // Setup webview event listeners
     this.webview.addEventListener('dom-ready', () => {
       console.log('WebView loaded successfully');
 
       if (!this.isEnvReady && this.webview) {
-        const userAgent =
-          'Mozilla/5.0 (Linux; Android 13; Pixel 7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/141.0.0.0 Mobile Safari/537.36';
-        this.webview.setUserAgent(userAgent);
-        console.log('UserAgent set to:', userAgent);
+        this.webview.setUserAgent(this.mobileUserAgent);
+        console.log('UserAgent set to:', this.mobileUserAgent);
 
         // Mark as ready before updating metrics
         this.isEnvReady = true;
@@ -75,7 +87,7 @@ export class WebViewManager {
 
         // Start monitoring cookies
         const webContentsId = this.webview.getWebContentsId();
-        (window as any).electronAPI?.startCookieMonitoring?.(webContentsId);
+        window.electronAPI?.startCookieMonitoring?.(webContentsId);
         console.log('Cookie monitoring started');
       }
     });
@@ -140,6 +152,27 @@ export class WebViewManager {
    */
   getWebView(): Electron.WebviewTag | null {
     return this.webview;
+  }
+
+  /**
+   * 强制显示登录页（若未创建则创建）
+   */
+  showLoginPage(): void {
+    if (!this.webview) {
+      this.create();
+    }
+    if (!this.webview) return;
+
+    // 确保容器显示
+    this.container.style.display = 'flex';
+
+    // 在当前任务队列后聚焦并加载登录页
+    setTimeout(() => {
+      this.webview?.focus();
+      if (this.webview && this.webview.getURL() !== 'https://e.xinrenxinshi.com/') {
+        this.webview.loadURL('https://e.xinrenxinshi.com/');
+      }
+    }, 0);
   }
 
   /**

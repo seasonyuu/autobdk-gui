@@ -75,7 +75,7 @@ export class CheckinManager {
       const executor = new CheckinExecutor(this.csrf);
 
       await executor.execute(this.items, (index, item) => {
-        this.dialog.updateItem(index, item);
+        this.dialog.updateItem(index, item, this.items);
       });
 
       // 显示结果

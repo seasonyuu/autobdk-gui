@@ -18,7 +18,7 @@ export class CheckinExecutor {
     onProgress: (index: number, item: ApprovalItem) => void
   ): Promise<void> {
     // 1. 获取补签配置
-    const signResult = await (window as any).electronAPI?.newSignAgain?.(this.csrf);
+    const signResult = await window.electronAPI?.newSignAgain?.(this.csrf);
 
     if (!signResult?.success || !signResult.data) {
       throw new Error(signResult?.error || '获取补签配置失败');
@@ -68,7 +68,7 @@ export class CheckinExecutor {
     let lastError: string | undefined;
 
     for (let retry = 0; retry < 5; retry++) {
-      const result = await (window as any).electronAPI?.startAttendanceApproval?.(
+      const result = await window.electronAPI?.startAttendanceApproval?.(
         this.csrf,
         approval
       );

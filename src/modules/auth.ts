@@ -19,7 +19,7 @@ export class AuthManager {
     error?: string;
   }> {
     try {
-      const result = await (window as any).electronAPI?.verifyCookies?.(clearOnFailure);
+      const result = await window.electronAPI?.verifyCookies?.(clearOnFailure);
 
       if (result?.success && result.data) {
         this.currentUserInfo = result.data;

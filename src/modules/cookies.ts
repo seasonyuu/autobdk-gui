@@ -95,7 +95,7 @@ export class CookieManager {
 
         if (!confirm(`确定要删除 Cookie "${name}" 吗？`)) return;
 
-        const result = await (window as any).electronAPI?.deleteCookieFromFile?.(
+        const result = await window.electronAPI?.deleteCookieFromFile?.(
           name,
           domain,
           path
@@ -104,7 +104,7 @@ export class CookieManager {
         if (result?.success) {
           console.log('Cookie deleted from file:', name);
           // Refresh the display
-          const cookies = await (window as any).electronAPI?.loadCookies?.();
+          const cookies = await window.electronAPI?.loadCookies?.();
           this.renderCookieTree(cookies, container);
         } else {
           alert('删除失败: ' + (result?.error || 'Unknown error'));
@@ -122,7 +122,7 @@ export class CookieManager {
       return { success: false, error: 'User cancelled' };
     }
 
-    const result = await (window as any).electronAPI?.clearCookiesFile?.();
+    const result = await window.electronAPI?.clearCookiesFile?.();
 
     if (result?.success) {
       console.log('Cookie file cleared successfully');
@@ -137,7 +137,7 @@ export class CookieManager {
    * 加载所有 Cookies
    */
   async loadAll(): Promise<any[]> {
-    const cookies = await (window as any).electronAPI?.loadCookies?.();
+    const cookies = await window.electronAPI?.loadCookies?.();
     return cookies || [];
   }
 }
