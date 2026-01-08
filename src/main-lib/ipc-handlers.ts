@@ -150,7 +150,18 @@ export function registerIpcHandlers() {
 
   ipcMain.handle('verify-cookies', async (event, clearOnFailure: boolean = false) => {
     try {
-      const cookies = cookieStore.load();
+      // 优先使用 WebView 实时 Session 中的 Cookie，避免文件被清空后拿不到最新登录态
+      const webviewSession = session.fromPartition('persist:mobile');
+      let cookies = await webviewSession.cookies.get({});
+
+      // 若 session 中为空，回退到文件缓存（如应用重启后的场景）
+      if (cookies.length === 0) {
+        cookies = cookieStore.load();
+      } else {
+        // 与文件保持同步
+        cookieStore.save(cookies);
+      }
+
       if (cookies.length === 0) {
         return { success: false, error: 'No saved cookies found' };
       }
@@ -159,7 +170,7 @@ export function registerIpcHandlers() {
         .map((cookie: any) => `${cookie.name}=${cookie.value}`)
         .join('; ');
 
-      console.log('Verifying cookies with common API...');
+      console.log('Verifying cookies with common API...', cookies.length, 'cookies');
       const result = await common(cookieString);
 
       if (result && 'redirect' in result) {
@@ -167,6 +178,7 @@ export function registerIpcHandlers() {
         
         if (clearOnFailure) {
           cookieStore.clearFile();
+          await webviewSession.clearStorageData({ storages: ['cookies'] });
         }
 
         return {
@@ -181,6 +193,8 @@ export function registerIpcHandlers() {
       
       if (clearOnFailure) {
         cookieStore.clearFile();
+        const webviewSession = session.fromPartition('persist:mobile');
+        await webviewSession.clearStorageData({ storages: ['cookies'] });
       }
 
       return {
