@@ -80,7 +80,7 @@ jobs:
           else
             TARGET="linux"
           fi
-          npm run dist -- --${TARGET} --${{ matrix.arch }}
+          npm run dist -- --${TARGET} --${{ matrix.arch }} --publish=never
 
       - name: Upload artifacts (macOS)
         if: matrix.platform == 'darwin'
