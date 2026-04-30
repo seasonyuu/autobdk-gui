@@ -4,8 +4,8 @@ import type { Cookie } from 'electron';
  * IPC result envelope shared by preload, renderer, and IPC handlers.
  */
 export type IpcResult<T = void> =
-  | { success: true; data?: T }
-  | { success: false; error: string };
+  | { success: true; data?: T; error?: never }
+  | { success: false; error: string; data?: never };
 
 export type ElectronCookie = Cookie;
 export type CookieList = ElectronCookie[];
@@ -58,7 +58,7 @@ export enum AttendanceSituation {
 }
 
 export interface IAttendanceRecordList {
-  attandanceArchive: {
+  attendanceArchive: {
     begin: string;
     end: string;
     yearmo: string;
