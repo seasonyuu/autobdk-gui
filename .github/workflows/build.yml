@@ -15,7 +15,28 @@ on:
   workflow_dispatch:
 
 jobs:
+  quality:
+    name: Build Preflight
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v6
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v6
+        with:
+          node-version: '20'
+          cache: 'npm'
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Run production build
+        run: npm run build
+
   build:
+    needs: quality
     env:
       GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
     strategy:
@@ -47,10 +68,10 @@ jobs:
 
     steps:
       - name: Checkout code
-        uses: actions/checkout@v4
+        uses: actions/checkout@v6
 
       - name: Setup Node.js
-        uses: actions/setup-node@v4
+        uses: actions/setup-node@v6
         with:
           node-version: '20'
           cache: 'npm'
@@ -84,7 +105,7 @@ jobs:
 
       - name: Upload artifacts (macOS)
         if: matrix.platform == 'darwin'
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: autobdk-gui-${{ matrix.platform }}-${{ matrix.arch }}
           path: |
@@ -93,7 +114,7 @@ jobs:
 
       - name: Upload artifacts (Windows)
         if: matrix.platform == 'win32'
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: autobdk-gui-${{ matrix.platform }}-${{ matrix.arch }}
           path: |
@@ -102,7 +123,7 @@ jobs:
 
       - name: Upload artifacts (Linux)
         if: matrix.platform == 'linux'
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: autobdk-gui-${{ matrix.platform }}-${{ matrix.arch }}
           path: |
@@ -120,7 +141,7 @@ jobs:
     name: Create Release
     needs: build
     runs-on: ubuntu-latest
-    if: always() && startsWith(github.ref, 'refs/tags/') && (needs.build.result == 'success' || needs.build.result == 'failure')
+    if: startsWith(github.ref, 'refs/tags/') && needs.build.result == 'success'
     permissions:
       contents: write
 
@@ -132,10 +153,10 @@ jobs:
           echo "Tag name: ${{ github.ref_name }}"
 
       - name: Checkout code
-        uses: actions/checkout@v4
+        uses: actions/checkout@v6
 
       - name: Download all artifacts
-        uses: actions/download-artifact@v4
+        uses: actions/download-artifact@v7
         with:
           path: artifacts
 
