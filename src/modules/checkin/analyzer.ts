@@ -1,4 +1,4 @@
-import type { ApprovalItem } from '../../types';
+import type { ApprovalItem, AttendanceRecordSummary, AttendanceSignTime } from '../../types';
 import { AttendanceSituation } from '../../types';
 import { parseTimestamp, formatDate, formatTime } from '../../utils/date';
 
@@ -49,7 +49,7 @@ export class AttendanceAnalyzer {
   /**
    * 分析单条考勤记录
    */
-  private async analyzeRecord(record: any): Promise<ApprovalItem[]> {
+  private async analyzeRecord(record: AttendanceRecordSummary): Promise<ApprovalItem[]> {
     const items: ApprovalItem[] = [];
     const recordTime = record.time;
 
@@ -67,8 +67,8 @@ export class AttendanceAnalyzer {
 
     const { signTimeList } = detailResult.data;
 
-    let timeBegin: any = null;
-    let timeEnd: any = null;
+    let timeBegin: AttendanceSignTime | null = null;
+    let timeEnd: AttendanceSignTime | null = null;
 
     for (const signTime of signTimeList) {
       if (signTime.rangeName === '上班') {

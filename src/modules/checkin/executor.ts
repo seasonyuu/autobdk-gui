@@ -1,4 +1,4 @@
-import type { ApprovalItem } from '../../types';
+import type { ApprovalItem, AttendanceApprovalRequest, INewSignAgain } from '../../types';
 import { parseTimestamp } from '../../utils/date';
 
 /**
@@ -50,10 +50,10 @@ export class CheckinExecutor {
   /**
    * 提交单个补签申请
    */
-  private async submitApproval(item: ApprovalItem, config: any): Promise<void> {
+  private async submitApproval(item: ApprovalItem, config: INewSignAgain): Promise<void> {
     const { year, month, day } = parseTimestamp(item.timestamp);
 
-    const approval = {
+    const approval: AttendanceApprovalRequest = {
       flow_type: config.flow_type,
       flowSettingId: config.flowSettingId,
       departmentId: config.departmentList[0].departmentId,

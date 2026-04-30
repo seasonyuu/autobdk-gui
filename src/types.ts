@@ -47,6 +47,7 @@ export enum AttendanceClockType {
 export enum AttendanceRecordMonthStatus {
   CURRENT = 0,
   NOT_CURRENT = -1,
+  ADJACENT = 1,
 }
 
 /**
@@ -82,7 +83,9 @@ export interface AttendanceRecordSummary {
   clockSettingId: number;
   containsData: number;
   date: number;
-  detailInfo: null;
+  detailInfo: {
+    signTimeList?: AttendanceSignTime[];
+  } | null;
   isClocking: number;
   isToday: number;
   isWorkday: number;

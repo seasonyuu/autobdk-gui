@@ -13,9 +13,14 @@ const allowedFiles = new Set([
   'src/main-lib/cookie-store.ts',
   'src/main-lib/ipc-handlers.ts',
   'src/modules/auth.ts',
+  'src/modules/calendar.ts',
+  'src/modules/checkin/analyzer.ts',
+  'src/modules/checkin/executor.ts',
+  'src/modules/cookies.ts',
   'src/preload.ts',
   'src/renderer.ts',
   'src/types.ts',
+  'tests/s02-boundary-contract.test.mjs',
 ]);
 
 function readTrackedSource(relativePath) {
@@ -151,11 +156,46 @@ test('src/main-lib/cookie-store.ts keeps S01 inferrable string annotations remov
   );
 });
 
+test('src/main-lib/cookie-store.ts restores cookies through typed CookiesSetDetails without any', () => {
+  const source = readTrackedSource('src/main-lib/cookie-store.ts');
+
+  assert.doesNotMatch(source, /\bany\b/, 'src/main-lib/cookie-store.ts must not contain explicit any');
+  assert.match(
+    source,
+    /CookiesSetDetails/,
+    'cookie-store restore path must keep using Electron CookiesSetDetails'
+  );
+  assert.match(
+    source,
+    /private toCookiesSetDetails\(cookie: Electron\.Cookie\): CookiesSetDetails \| null/,
+    'cookie-store must convert stored cookies with a typed helper that can reject malformed cookies'
+  );
+  assert.match(
+    source,
+    /cookie\.domain\?\.startsWith\('\.'\)/,
+    'cookie-store must normalize leading-dot domains before restoring cookies'
+  );
+});
+
 test('src/main-lib/ipc-handlers.ts keeps S01 inferrable boolean defaults removed', () => {
   assertNoPattern(
     'src/main-lib/ipc-handlers.ts',
     /clearOnFailure:\s*boolean\s*=\s*false/,
     'ipc-handlers verify-cookies clearOnFailure default should rely on boolean literal inference'
+  );
+});
+
+test('src/main-lib/ipc-handlers.ts uses shared result types without explicit any', () => {
+  const source = readTrackedSource('src/main-lib/ipc-handlers.ts');
+
+  assert.doesNotMatch(source, /\bany\b/, 'src/main-lib/ipc-handlers.ts must not contain explicit any');
+  assert.match(source, /Promise<IpcResult>/, 'cookie mutation IPC handlers must use shared IpcResult');
+  assert.match(source, /Promise<VerifyCookiesResult>/, 'verify-cookies must use the shared verify result');
+  assert.match(source, /Promise<AttendanceRecordsResult>/, 'attendance record IPC must use shared attendance results');
+  assert.match(
+    source,
+    /No saved cookies found/,
+    'missing credentials must preserve the existing typed error return'
   );
 });
 
@@ -172,6 +212,45 @@ test('src/renderer.ts keeps S01 inferrable boolean defaults removed', () => {
     'src/renderer.ts',
     /clearOnFailure:\s*boolean\s*=\s*false/,
     'renderer verifyCookiesAndShowInfo clearOnFailure default should rely on boolean literal inference'
+  );
+});
+
+test('renderer boundary consumers use shared types without explicit any', () => {
+  const consumerFiles = [
+    'src/modules/calendar.ts',
+    'src/modules/cookies.ts',
+    'src/modules/checkin/analyzer.ts',
+    'src/modules/checkin/executor.ts',
+  ];
+
+  for (const relativePath of consumerFiles) {
+    assertNoPattern(
+      relativePath,
+      /\bany\b/,
+      `${relativePath} must not contain explicit any after S02 consumer typing`
+    );
+  }
+});
+
+test('src/modules/cookies.ts guards cookie identity attributes before delete IPC', () => {
+  const source = readTrackedSource('src/modules/cookies.ts');
+
+  assert.doesNotMatch(source, /getAttribute\([^\n]+\)!/, 'cookie delete must not use non-null assertions on DOM attributes');
+  assert.match(
+    source,
+    /if \(!name \|\| !domain \|\| !path\)/,
+    'cookie delete must guard missing name, domain, or path before invoking IPC'
+  );
+});
+
+test('S02 contract tests remain non-destructive for attendance approval', () => {
+  const source = readTrackedSource('tests/s02-boundary-contract.test.mjs');
+  const prohibitedCall = 'window.electronAPI?.' + 'startAttendanceApproval';
+
+  assert.equal(
+    source.includes(prohibitedCall),
+    false,
+    'S02 contract tests must not call the live attendance approval IPC path'
   );
 });
 
