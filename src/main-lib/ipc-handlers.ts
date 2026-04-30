@@ -7,8 +7,8 @@ import {
   getApproveBdkFlow,
   newSignAgain,
   startAttendanceApproval,
-  IAttendanceApproval
 } from '../api';
+import type { IAttendanceApproval } from '../types';
 
 export function registerIpcHandlers() {
   // ==================== Device Emulation ====================

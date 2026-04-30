@@ -9,10 +9,13 @@ const projectRoot = path.resolve(__dirname, '..');
 const allowedFiles = new Set([
   'package.json',
   'src/api.ts',
+  'src/electron-env.d.ts',
   'src/main-lib/cookie-store.ts',
   'src/main-lib/ipc-handlers.ts',
   'src/modules/auth.ts',
+  'src/preload.ts',
   'src/renderer.ts',
+  'src/types.ts',
 ]);
 
 function readTrackedSource(relativePath) {
@@ -58,6 +61,80 @@ test('src/api.ts avoids boxed String and empty-object envelope boundaries', () =
     'src/api.ts',
     /IEnvelope<\{\}>/,
     'src/api.ts must not use {} for the approval IPC/API envelope'
+  );
+});
+
+test('src/types.ts defines reusable IPC and renderer-safe API boundary types', () => {
+  const source = readTrackedSource('src/types.ts');
+
+  assert.match(
+    source,
+    /export type IpcResult<T = void>/,
+    'src/types.ts must define the reusable IpcResult envelope'
+  );
+  assert.match(
+    source,
+    /success:\s*true;\s*data\?:\s*T/s,
+    'IpcResult must allow success results with optional data'
+  );
+  assert.match(
+    source,
+    /success:\s*false;\s*error:\s*string/s,
+    'IpcResult must allow error-only failures without data'
+  );
+  assert.match(
+    source,
+    /export type ElectronCookie = Cookie/,
+    'src/types.ts must expose an Electron Cookie alias for preload and renderer contracts'
+  );
+  assert.match(
+    source,
+    /export type AttendanceApprovalRequest = IAttendanceApproval/,
+    'src/types.ts must expose a named attendance approval request payload'
+  );
+});
+
+test('src/electron-env.d.ts uses named shared boundary results without any', () => {
+  const source = readTrackedSource('src/electron-env.d.ts');
+
+  assert.doesNotMatch(source, /\bany\b/, 'src/electron-env.d.ts must not contain explicit any');
+  assert.match(source, /IpcResult/, 'src/electron-env.d.ts must use the shared IpcResult envelope');
+  assert.match(source, /CookieList/, 'src/electron-env.d.ts must use the shared CookieList alias');
+  assert.match(
+    source,
+    /startAttendanceApproval:\s*\(csrf:\s*string,\s*approval:\s*AttendanceApprovalRequest\)/,
+    'startAttendanceApproval must accept the named approval request payload, not any'
+  );
+  assertNoPattern(
+    'src/electron-env.d.ts',
+    /from ['"]\.\/api['"]/,
+    'src/electron-env.d.ts must not import API runtime modules for renderer globals'
+  );
+});
+
+test('src/preload.ts is typed against IElectronAPI without widening callbacks or imports', () => {
+  const source = readTrackedSource('src/preload.ts');
+
+  assert.doesNotMatch(source, /\bany\b/, 'src/preload.ts must not contain explicit any');
+  assert.match(
+    source,
+    /import type \{ IElectronAPI \} from ['"]\.\/electron-env['"]/,
+    'src/preload.ts must import the preload contract as a type only'
+  );
+  assert.match(
+    source,
+    /const electronAPI:\s*IElectronAPI\s*=/,
+    'src/preload.ts must type the exposed object against IElectronAPI'
+  );
+  assert.match(
+    source,
+    /ipcRenderer\.on\('cookies-updated',\s*\(\)\s*=>\s*\{\s*callback\(\);\s*\}\)/s,
+    'onCookiesUpdated must wrap the Electron event and call the renderer callback with no arguments'
+  );
+  assertNoPattern(
+    'src/preload.ts',
+    /from ['"]\.\/api['"]/,
+    'src/preload.ts must not import API runtime modules into the preload bundle'
   );
 });
 
