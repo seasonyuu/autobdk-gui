@@ -14,7 +14,8 @@
     "dist": "npm run build && electron-builder",
     "lint": "eslint --ext .ts,.tsx .",
     "test:s02": "node --test tests/s02-boundary-contract.test.mjs",
-    "test:s03": "node --test tests/s03-electron-security-contract.test.mjs"
+    "test:s03": "node --test tests/s03-electron-security-contract.test.mjs",
+    "test:s04": "node --test tests/s04-failure-visibility-contract.test.mjs"
   },
   "keywords": [],
   "author": {
