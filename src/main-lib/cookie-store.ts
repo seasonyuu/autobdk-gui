@@ -5,7 +5,7 @@ import { ICredential } from '../api';
 
 export class CookieStore {
   private readonly cookiesFile: string;
-  private lastCookiesHash: string = '';
+  private lastCookiesHash = '';
 
   constructor() {
     this.cookiesFile = path.join(app.getPath('userData'), 'webview-cookies.json');
@@ -83,7 +83,7 @@ export class CookieStore {
   /**
    * Restore cookies to session
    */
-  async restoreToSession(partition: string = 'persist:mobile'): Promise<void> {
+  async restoreToSession(partition = 'persist:mobile'): Promise<void> {
     const cookies = this.load();
     if (cookies.length === 0) return;
 

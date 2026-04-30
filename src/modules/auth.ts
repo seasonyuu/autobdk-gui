@@ -13,7 +13,7 @@ export class AuthManager {
    * 验证 Cookies 并获取用户信息
    * @param clearOnFailure 是否在验证失败时清除 Cookie（仅用于启动时）
    */
-  async verifyCookies(clearOnFailure: boolean = false): Promise<{
+  async verifyCookies(clearOnFailure = false): Promise<{
     success: boolean;
     data?: UserInfo;
     error?: string;

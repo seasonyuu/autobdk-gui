@@ -12,7 +12,8 @@
     "build:renderer": "vite build --config vite.renderer.config.ts",
     "copy-assets": "node -e \"const fs=require('fs');fs.cpSync('assets','dist/assets',{recursive:true});\"",
     "dist": "npm run build && electron-builder",
-    "lint": "eslint --ext .ts,.tsx ."
+    "lint": "eslint --ext .ts,.tsx .",
+    "test:s02": "node --test tests/s02-boundary-contract.test.mjs"
   },
   "keywords": [],
   "author": {

@@ -148,7 +148,7 @@ export function registerIpcHandlers() {
     }
   });
 
-  ipcMain.handle('verify-cookies', async (event, clearOnFailure: boolean = false) => {
+  ipcMain.handle('verify-cookies', async (event, clearOnFailure = false) => {
     try {
       // 优先使用 WebView 实时 Session 中的 Cookie，避免文件被清空后拿不到最新登录态
       const webviewSession = session.fromPartition('persist:mobile');

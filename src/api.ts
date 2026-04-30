@@ -24,7 +24,7 @@ interface ICommon {
   companyName: string;
   employeeName: string;
   csrf: string;
-  redirect?: String;
+  redirect?: string;
 }
 
 export async function common(cookie: string): Promise<ICommon> {
@@ -261,6 +261,6 @@ export async function startAttendanceApproval(
         data,
       },
     })
-    .json() as IEnvelope<{}>;
+    .json() as IEnvelope<Record<string, never>>;
   return status ? undefined : message;
 }
