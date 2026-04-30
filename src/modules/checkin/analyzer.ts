@@ -1,4 +1,4 @@
-import type { ApprovalItem } from '../../types';
+import type { ApprovalItem, AttendanceRecordSummary, AttendanceSignTime } from '../../types';
 import { AttendanceSituation } from '../../types';
 import { parseTimestamp, formatDate, formatTime } from '../../utils/date';
 
@@ -49,7 +49,7 @@ export class AttendanceAnalyzer {
   /**
    * 分析单条考勤记录
    */
-  private async analyzeRecord(record: any): Promise<ApprovalItem[]> {
+  private async analyzeRecord(record: AttendanceRecordSummary): Promise<ApprovalItem[]> {
     const items: ApprovalItem[] = [];
     const recordTime = record.time;
 
@@ -61,14 +61,14 @@ export class AttendanceAnalyzer {
     );
 
     if (!detailResult?.success || !detailResult.data?.signTimeList) {
-      console.warn('Failed to get detail for date:', dateStr);
+      this.warnMalformedAttendanceDetail(dateStr, detailResult?.error || 'missing signTimeList');
       return items;
     }
 
     const { signTimeList } = detailResult.data;
 
-    let timeBegin: any = null;
-    let timeEnd: any = null;
+    let timeBegin: AttendanceSignTime | null = null;
+    let timeEnd: AttendanceSignTime | null = null;
 
     for (const signTime of signTimeList) {
       if (signTime.rangeName === '上班') {
@@ -139,6 +139,13 @@ export class AttendanceAnalyzer {
     }
 
     return items;
+  }
+
+  /**
+   * 记录考勤详情异常，避免把缺失数据误判为无需补签。
+   */
+  private warnMalformedAttendanceDetail(date: string, reason: string): void {
+    console.warn('Malformed attendance detail response:', { date, reason });
   }
 
   /**

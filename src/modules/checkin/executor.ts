@@ -1,4 +1,4 @@
-import type { ApprovalItem } from '../../types';
+import type { ApprovalItem, AttendanceApprovalRequest, INewSignAgain } from '../../types';
 import { parseTimestamp } from '../../utils/date';
 
 /**
@@ -25,6 +25,7 @@ export class CheckinExecutor {
     }
 
     const config = signResult.data;
+    this.validateNewSignAgainConfig(config);
 
     // 2. 逐个提交补签
     for (let i = 0; i < items.length; i++) {
@@ -48,12 +49,23 @@ export class CheckinExecutor {
   }
 
   /**
+   * 验证补签配置是否足够构造补签申请。
+   */
+  private validateNewSignAgainConfig(config: INewSignAgain): void {
+    const departmentId = config.departmentList[0]?.departmentId;
+
+    if (!departmentId) {
+      throw new Error('补签配置不完整：缺少部门信息');
+    }
+  }
+
+  /**
    * 提交单个补签申请
    */
-  private async submitApproval(item: ApprovalItem, config: any): Promise<void> {
+  private async submitApproval(item: ApprovalItem, config: INewSignAgain): Promise<void> {
     const { year, month, day } = parseTimestamp(item.timestamp);
 
-    const approval = {
+    const approval: AttendanceApprovalRequest = {
       flow_type: config.flow_type,
       flowSettingId: config.flowSettingId,
       departmentId: config.departmentList[0].departmentId,

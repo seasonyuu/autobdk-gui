@@ -1,24 +1,35 @@
+import type {
+  ApproveBdkFlowResult,
+  AttendanceApprovalRequest,
+  AttendanceApprovalResult,
+  AttendanceRecordDetailResult,
+  AttendanceRecordsResult,
+  CookieList,
+  IpcResult,
+  NewSignAgainResult,
+  VerifyCookiesResult,
+} from './types';
 
 export interface IElectronAPI {
   // Device & Cookie Management
   enableDeviceEmulation: (webContentsId: number, width?: number, height?: number) => void;
   startCookieMonitoring: (webContentsId: number) => void;
-  saveCookies: (cookies: any[]) => void;
-  loadCookies: () => Promise<any[]>;
-  getCookies: (webContentsId: number) => Promise<any[]>;
-  clearCookies: (webContentsId: number) => Promise<{ success: boolean; error?: string }>;
-  deleteCookie: (webContentsId: number, name: string, domain: string, path: string) => Promise<{ success: boolean; error?: string }>;
-  deleteCookieFromFile: (name: string, domain: string, path: string) => Promise<{ success: boolean; error?: string }>;
-  clearCookiesFile: () => Promise<{ success: boolean; error?: string }>;
-  verifyCookies: (clearOnFailure?: boolean) => Promise<{ success: boolean; data?: any; error?: string }>;
+  saveCookies: (cookies: CookieList) => void;
+  loadCookies: () => Promise<CookieList>;
+  getCookies: (webContentsId: number) => Promise<CookieList>;
+  clearCookies: (webContentsId: number) => Promise<IpcResult>;
+  deleteCookie: (webContentsId: number, name: string, domain: string, path: string) => Promise<IpcResult>;
+  deleteCookieFromFile: (name: string, domain: string, path: string) => Promise<IpcResult>;
+  clearCookiesFile: () => Promise<IpcResult>;
+  verifyCookies: (clearOnFailure?: boolean) => Promise<VerifyCookiesResult>;
   onCookiesUpdated: (callback: () => void) => void;
 
   // Business Logic
-  getAttendanceRecords: (csrf: string, yearmo?: string) => Promise<{ success: boolean; data?: any; error?: string }>;
-  getAttendanceRecordByDate: (csrf: string, date: string) => Promise<{ success: boolean; data?: any; error?: string }>;
-  getApproveBdkFlow: (csrf: string, date: string) => Promise<{ success: boolean; data?: any; error?: string }>;
-  newSignAgain: (csrf: string) => Promise<{ success: boolean; data?: any; error?: string }>;
-  startAttendanceApproval: (csrf: string, approval: any) => Promise<{ success: boolean; error?: string }>;
+  getAttendanceRecords: (csrf: string, yearmo?: string) => Promise<AttendanceRecordsResult>;
+  getAttendanceRecordByDate: (csrf: string, date: string) => Promise<AttendanceRecordDetailResult>;
+  getApproveBdkFlow: (csrf: string, date: string) => Promise<ApproveBdkFlowResult>;
+  newSignAgain: (csrf: string) => Promise<NewSignAgainResult>;
+  startAttendanceApproval: (csrf: string, approval: AttendanceApprovalRequest) => Promise<AttendanceApprovalResult>;
 }
 
 declare global {

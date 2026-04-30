@@ -1,3 +1,4 @@
+import type { AttendanceRecordSummary, IAttendanceRecordList } from '../types';
 import { escapeHtml } from '../utils/dom';
 
 /**
@@ -10,8 +11,8 @@ export class CalendarManager {
   /**
    * 渲染日历
    */
-  render(attendanceData: any, onMonthChange: (offset: number) => void): void {
-    if (!this.container || !attendanceData?.records) return;
+  render(attendanceData: IAttendanceRecordList, onMonthChange: (offset: number) => void): void {
+    if (!this.container || !attendanceData.records) return;
 
     const { records, attendanceArchive } = attendanceData;
 
@@ -59,7 +60,7 @@ export class CalendarManager {
 
     // Find the first day to determine starting position
     const firstRecord = records.find(
-      (r: any) => r.monthStatus === 0 || r.monthStatus === -1
+      (record: AttendanceRecordSummary) => record.monthStatus === 0 || record.monthStatus === -1
     );
     if (!firstRecord) {
       this.container.innerHTML =
@@ -82,7 +83,7 @@ export class CalendarManager {
     }
 
     // Render each day
-    records.forEach((record: any) => {
+    records.forEach((record: AttendanceRecordSummary) => {
       // Skip days from previous/next month
       if (record.monthStatus === -1 || record.monthStatus === 1) {
         return;
@@ -102,8 +103,8 @@ export class CalendarManager {
       let statusText = '';
       if (record.detailInfo?.signTimeList) {
         const statusDescList = record.detailInfo.signTimeList
-          .filter((s: any) => s.statusDesc)
-          .map((s: any) => s.statusDesc);
+          .filter((signTime) => signTime.statusDesc)
+          .map((signTime) => signTime.statusDesc);
         if (statusDescList.length > 0) {
           statusText = `<div class="day-status">${escapeHtml(statusDescList.join(', '))}</div>`;
         }

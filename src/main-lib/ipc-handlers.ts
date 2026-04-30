@@ -1,4 +1,5 @@
 import { ipcMain, webContents, session } from 'electron';
+import type { IpcMainEvent, IpcMainInvokeEvent } from 'electron';
 import { cookieStore } from './cookie-store';
 import {
   common,
@@ -7,13 +8,79 @@ import {
   getApproveBdkFlow,
   newSignAgain,
   startAttendanceApproval,
-  IAttendanceApproval
 } from '../api';
+import type {
+  ApproveBdkFlowResult,
+  AttendanceApprovalRequest,
+  AttendanceApprovalResult,
+  AttendanceRecordDetailResult,
+  AttendanceRecordsResult,
+  CookieList,
+  IpcResult,
+  NewSignAgainResult,
+  VerifyCookiesResult,
+} from '../types';
+
+const toIpcError = (error: unknown): string => {
+  return error instanceof Error ? error.message : String(error);
+};
+
+const UNAUTHORIZED_IPC_ERROR = 'Unauthorized IPC sender';
+const rendererDevServerUrl = process.env.VITE_DEV_SERVER_URL;
+
+const isTrustedIpcSender = (event: IpcMainEvent | IpcMainInvokeEvent): boolean => {
+  const frameUrl = event.senderFrame?.url;
+  if (!frameUrl) return false;
+
+  try {
+    const parsedUrl = new URL(frameUrl);
+
+    if (rendererDevServerUrl) {
+      return parsedUrl.origin === new URL(rendererDevServerUrl).origin;
+    }
+
+    return parsedUrl.protocol === 'file:' && parsedUrl.pathname.endsWith('/renderer/index.html');
+  } catch {
+    return false;
+  }
+};
+
+const logRejectedIpcSender = (channel: string, event: IpcMainEvent | IpcMainInvokeEvent): void => {
+  console.warn('Rejected IPC sender:', channel, event.senderFrame?.url || 'unknown');
+};
+
+const registerTrustedIpcOn = <Args extends unknown[]>(
+  channel: string,
+  listener: (event: IpcMainEvent, ...args: Args) => void
+): void => {
+  ipcMain.on(channel, (event, ...args) => {
+    if (!isTrustedIpcSender(event)) {
+      logRejectedIpcSender(channel, event);
+      return;
+    }
+
+    listener(event, ...(args as Args));
+  });
+};
+
+const registerTrustedIpcHandle = <Args extends unknown[], Result>(
+  channel: string,
+  listener: (event: IpcMainInvokeEvent, ...args: Args) => Promise<Result> | Result
+): void => {
+  ipcMain.handle(channel, async (event, ...args) => {
+    if (!isTrustedIpcSender(event)) {
+      logRejectedIpcSender(channel, event);
+      return { success: false, error: UNAUTHORIZED_IPC_ERROR };
+    }
+
+    return listener(event, ...(args as Args));
+  });
+};
 
 export function registerIpcHandlers() {
   // ==================== Device Emulation ====================
   
-  ipcMain.on('enable-device-emulation', (event, webContentsId: number, width?: number, height?: number) => {
+  registerTrustedIpcOn('enable-device-emulation', (_event, webContentsId: number, width?: number, height?: number) => {
     try {
       const wc = webContents.fromId(webContentsId);
       if (wc) {
@@ -47,21 +114,21 @@ export function registerIpcHandlers() {
 
   // ==================== Cookie Management ====================
 
-  ipcMain.on('save-cookies', async (event, cookies) => {
+  registerTrustedIpcOn('save-cookies', (_event, cookies: CookieList) => {
     cookieStore.save(cookies);
   });
 
-  ipcMain.handle('load-cookies', async () => {
+  registerTrustedIpcHandle('load-cookies', async (): Promise<CookieList> => {
     return cookieStore.load();
   });
 
-  ipcMain.on('start-cookie-monitoring', (event, webContentsId: number) => {
+  registerTrustedIpcOn('start-cookie-monitoring', (event, webContentsId: number) => {
     try {
       const wc = webContents.fromId(webContentsId);
       if (wc) {
         const webviewSession = wc.session;
 
-        webviewSession.cookies.addListener('changed', async (cookieEvent, cookie, cause, removed) => {
+        webviewSession.cookies.addListener('changed', async () => {
           const allCookies = await webviewSession.cookies.get({});
           
           if (cookieStore.handleCookiesChanged(allCookies)) {
@@ -77,7 +144,7 @@ export function registerIpcHandlers() {
     }
   });
 
-  ipcMain.handle('get-cookies', async (event, webContentsId: number) => {
+  registerTrustedIpcHandle('get-cookies', async (_event, webContentsId: number): Promise<CookieList> => {
     try {
       const wc = webContents.fromId(webContentsId);
       if (wc) {
@@ -89,7 +156,7 @@ export function registerIpcHandlers() {
     return [];
   });
 
-  ipcMain.handle('clear-cookies', async (event, webContentsId: number) => {
+  registerTrustedIpcHandle('clear-cookies', async (_event, webContentsId: number): Promise<IpcResult> => {
     try {
       const wc = webContents.fromId(webContentsId);
       if (wc) {
@@ -98,12 +165,18 @@ export function registerIpcHandlers() {
         return { success: true };
       }
     } catch (error) {
-      return { success: false, error: error instanceof Error ? error.message : String(error) };
+      return { success: false, error: toIpcError(error) };
     }
     return { success: false, error: 'WebContents not found' };
   });
 
-  ipcMain.handle('delete-cookie', async (event, webContentsId: number, name: string, domain: string, path: string) => {
+  registerTrustedIpcHandle('delete-cookie', async (
+    _event,
+    webContentsId: number,
+    name: string,
+    domain: string,
+    path: string
+  ): Promise<IpcResult> => {
     try {
       const wc = webContents.fromId(webContentsId);
       if (wc) {
@@ -116,12 +189,17 @@ export function registerIpcHandlers() {
         return { success: true };
       }
     } catch (error) {
-      return { success: false, error: error instanceof Error ? error.message : String(error) };
+      return { success: false, error: toIpcError(error) };
     }
     return { success: false, error: 'WebContents not found' };
   });
 
-  ipcMain.handle('delete-cookie-from-file', async (event, name: string, domain: string, path: string) => {
+  registerTrustedIpcHandle('delete-cookie-from-file', async (
+    _event,
+    name: string,
+    domain: string,
+    path: string
+  ): Promise<IpcResult> => {
     try {
       // Delete from webview session
       const webviewSession = session.fromPartition('persist:mobile');
@@ -133,26 +211,26 @@ export function registerIpcHandlers() {
       
       return { success: true };
     } catch (error) {
-      return { success: false, error: error instanceof Error ? error.message : String(error) };
+      return { success: false, error: toIpcError(error) };
     }
   });
 
-  ipcMain.handle('clear-cookies-file', async () => {
+  registerTrustedIpcHandle('clear-cookies-file', async (): Promise<IpcResult> => {
     try {
       const webviewSession = session.fromPartition('persist:mobile');
       await webviewSession.clearStorageData({ storages: ['cookies'] });
       cookieStore.clearFile();
       return { success: true };
     } catch (error) {
-      return { success: false, error: error instanceof Error ? error.message : String(error) };
+      return { success: false, error: toIpcError(error) };
     }
   });
 
-  ipcMain.handle('verify-cookies', async (event, clearOnFailure: boolean = false) => {
+  registerTrustedIpcHandle('verify-cookies', async (_event, clearOnFailure = false): Promise<VerifyCookiesResult> => {
     try {
       // 优先使用 WebView 实时 Session 中的 Cookie，避免文件被清空后拿不到最新登录态
       const webviewSession = session.fromPartition('persist:mobile');
-      let cookies = await webviewSession.cookies.get({});
+      let cookies: CookieList = await webviewSession.cookies.get({});
 
       // 若 session 中为空，回退到文件缓存（如应用重启后的场景）
       if (cookies.length === 0) {
@@ -167,7 +245,7 @@ export function registerIpcHandlers() {
       }
 
       const cookieString = cookies
-        .map((cookie: any) => `${cookie.name}=${cookie.value}`)
+        .map((cookie) => `${cookie.name}=${cookie.value}`)
         .join('; ');
 
       console.log('Verifying cookies with common API...', cookies.length, 'cookies');
@@ -199,14 +277,18 @@ export function registerIpcHandlers() {
 
       return {
         success: false,
-        error: error instanceof Error ? error.message : String(error)
+        error: toIpcError(error)
       };
     }
   });
 
   // ==================== Business Logic ====================
 
-  ipcMain.handle('get-attendance-records', async (event, csrf: string, yearmo?: string) => {
+  registerTrustedIpcHandle('get-attendance-records', async (
+    _event,
+    csrf: string,
+    yearmo?: string
+  ): Promise<AttendanceRecordsResult> => {
     try {
       const cred = cookieStore.getCredentials(csrf);
       if (!cred) return { success: false, error: 'No saved cookies found' };
@@ -215,11 +297,15 @@ export function registerIpcHandlers() {
       const result = await getAttendanceRecordList(cred, yearmo || '');
       return { success: true, data: result };
     } catch (error) {
-      return { success: false, error: error instanceof Error ? error.message : String(error) };
+      return { success: false, error: toIpcError(error) };
     }
   });
 
-  ipcMain.handle('get-attendance-record-by-date', async (event, csrf: string, date: string) => {
+  registerTrustedIpcHandle('get-attendance-record-by-date', async (
+    _event,
+    csrf: string,
+    date: string
+  ): Promise<AttendanceRecordDetailResult> => {
     try {
       const cred = cookieStore.getCredentials(csrf);
       if (!cred) return { success: false, error: 'No saved cookies found' };
@@ -227,11 +313,15 @@ export function registerIpcHandlers() {
       const result = await getAttendanceRecordByDate(cred, date);
       return { success: true, data: result };
     } catch (error) {
-      return { success: false, error: error instanceof Error ? error.message : String(error) };
+      return { success: false, error: toIpcError(error) };
     }
   });
 
-  ipcMain.handle('get-approve-bdk-flow', async (event, csrf: string, date: string) => {
+  registerTrustedIpcHandle('get-approve-bdk-flow', async (
+    _event,
+    csrf: string,
+    date: string
+  ): Promise<ApproveBdkFlowResult> => {
     try {
       const cred = cookieStore.getCredentials(csrf);
       if (!cred) return { success: false, error: 'No saved cookies found' };
@@ -239,11 +329,11 @@ export function registerIpcHandlers() {
       const result = await getApproveBdkFlow(cred, date);
       return { success: true, data: result };
     } catch (error) {
-      return { success: false, error: error instanceof Error ? error.message : String(error) };
+      return { success: false, error: toIpcError(error) };
     }
   });
 
-  ipcMain.handle('new-sign-again', async (event, csrf: string) => {
+  registerTrustedIpcHandle('new-sign-again', async (_event, csrf: string): Promise<NewSignAgainResult> => {
     try {
       const cred = cookieStore.getCredentials(csrf);
       if (!cred) return { success: false, error: 'No saved cookies found' };
@@ -251,11 +341,15 @@ export function registerIpcHandlers() {
       const result = await newSignAgain(cred);
       return { success: true, data: result };
     } catch (error) {
-      return { success: false, error: error instanceof Error ? error.message : String(error) };
+      return { success: false, error: toIpcError(error) };
     }
   });
 
-  ipcMain.handle('start-attendance-approval', async (event, csrf: string, approval: IAttendanceApproval) => {
+  registerTrustedIpcHandle('start-attendance-approval', async (
+    _event,
+    csrf: string,
+    approval: AttendanceApprovalRequest
+  ): Promise<AttendanceApprovalResult> => {
     try {
       const cred = cookieStore.getCredentials(csrf);
       if (!cred) return { success: false, error: 'No saved cookies found' };
@@ -267,7 +361,7 @@ export function registerIpcHandlers() {
       }
       return { success: true };
     } catch (error) {
-      return { success: false, error: error instanceof Error ? error.message : String(error) };
+      return { success: false, error: toIpcError(error) };
     }
   });
 }

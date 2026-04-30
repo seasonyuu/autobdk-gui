@@ -124,7 +124,7 @@ async function loadCurrentMonthAttendance(): Promise<void> {
  * Verify cookies and display user info
  * @param clearOnFailure Whether to clear cookies if verification fails (true for startup, false for cookie updates)
  */
-async function verifyCookiesAndShowInfo(clearOnFailure: boolean = false): Promise<void> {
+async function verifyCookiesAndShowInfo(clearOnFailure = false): Promise<void> {
   authManager.updateTopBarDisplay(userDisplayName, 'loading');
 
   try {

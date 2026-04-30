@@ -2,54 +2,63 @@
 // https://www.electronjs.org/docs/latest/tutorial/process-model#preload-scripts
 
 import { contextBridge, ipcRenderer } from 'electron';
+import type { IElectronAPI } from './electron-env';
 
-contextBridge.exposeInMainWorld('electronAPI', {
-  enableDeviceEmulation: (webContentsId: number, width?: number, height?: number) => {
+const invoke = <T>(channel: string, ...args: unknown[]): Promise<T> => {
+  return ipcRenderer.invoke(channel, ...args) as Promise<T>;
+};
+
+const electronAPI: IElectronAPI = {
+  enableDeviceEmulation: (webContentsId, width, height) => {
     ipcRenderer.send('enable-device-emulation', webContentsId, width, height);
   },
-  startCookieMonitoring: (webContentsId: number) => {
+  startCookieMonitoring: (webContentsId) => {
     ipcRenderer.send('start-cookie-monitoring', webContentsId);
   },
-  saveCookies: (cookies: any[]) => {
+  saveCookies: (cookies) => {
     ipcRenderer.send('save-cookies', cookies);
   },
   loadCookies: () => {
-    return ipcRenderer.invoke('load-cookies');
+    return invoke('load-cookies');
   },
-  getCookies: (webContentsId: number) => {
-    return ipcRenderer.invoke('get-cookies', webContentsId);
+  getCookies: (webContentsId) => {
+    return invoke('get-cookies', webContentsId);
   },
-  clearCookies: (webContentsId: number) => {
-    return ipcRenderer.invoke('clear-cookies', webContentsId);
+  clearCookies: (webContentsId) => {
+    return invoke('clear-cookies', webContentsId);
   },
-  deleteCookie: (webContentsId: number, name: string, domain: string, path: string) => {
-    return ipcRenderer.invoke('delete-cookie', webContentsId, name, domain, path);
+  deleteCookie: (webContentsId, name, domain, path) => {
+    return invoke('delete-cookie', webContentsId, name, domain, path);
   },
-  deleteCookieFromFile: (name: string, domain: string, path: string) => {
-    return ipcRenderer.invoke('delete-cookie-from-file', name, domain, path);
+  deleteCookieFromFile: (name, domain, path) => {
+    return invoke('delete-cookie-from-file', name, domain, path);
   },
   clearCookiesFile: () => {
-    return ipcRenderer.invoke('clear-cookies-file');
+    return invoke('clear-cookies-file');
   },
-  verifyCookies: (clearOnFailure?: boolean) => {
-    return ipcRenderer.invoke('verify-cookies', clearOnFailure);
+  verifyCookies: (clearOnFailure) => {
+    return invoke('verify-cookies', clearOnFailure);
   },
-  onCookiesUpdated: (callback: () => void) => {
-    ipcRenderer.on('cookies-updated', callback);
+  onCookiesUpdated: (callback) => {
+    ipcRenderer.on('cookies-updated', () => {
+      callback();
+    });
   },
-  getAttendanceRecords: (csrf: string, yearmo?: string) => {
-    return ipcRenderer.invoke('get-attendance-records', csrf, yearmo);
+  getAttendanceRecords: (csrf, yearmo) => {
+    return invoke('get-attendance-records', csrf, yearmo);
   },
-  getAttendanceRecordByDate: (csrf: string, date: string) => {
-    return ipcRenderer.invoke('get-attendance-record-by-date', csrf, date);
+  getAttendanceRecordByDate: (csrf, date) => {
+    return invoke('get-attendance-record-by-date', csrf, date);
   },
-  getApproveBdkFlow: (csrf: string, date: string) => {
-    return ipcRenderer.invoke('get-approve-bdk-flow', csrf, date);
+  getApproveBdkFlow: (csrf, date) => {
+    return invoke('get-approve-bdk-flow', csrf, date);
   },
-  newSignAgain: (csrf: string) => {
-    return ipcRenderer.invoke('new-sign-again', csrf);
+  newSignAgain: (csrf) => {
+    return invoke('new-sign-again', csrf);
   },
-  startAttendanceApproval: (csrf: string, approval: any) => {
-    return ipcRenderer.invoke('start-attendance-approval', csrf, approval);
-  }
-});
+  startAttendanceApproval: (csrf, approval) => {
+    return invoke('start-attendance-approval', csrf, approval);
+  },
+};
+
+contextBridge.exposeInMainWorld('electronAPI', electronAPI);

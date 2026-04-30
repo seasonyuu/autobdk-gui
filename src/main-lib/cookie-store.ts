@@ -1,11 +1,12 @@
-import { app, session, CookiesSetDetails } from 'electron';
+import { app, session } from 'electron';
+import type { CookiesSetDetails } from 'electron';
 import path from 'node:path';
 import fs from 'node:fs';
-import { ICredential } from '../api';
+import type { ICredential } from '../api';
 
 export class CookieStore {
   private readonly cookiesFile: string;
-  private lastCookiesHash: string = '';
+  private lastCookiesHash = '';
 
   constructor() {
     this.cookiesFile = path.join(app.getPath('userData'), 'webview-cookies.json');
@@ -83,7 +84,7 @@ export class CookieStore {
   /**
    * Restore cookies to session
    */
-  async restoreToSession(partition: string = 'persist:mobile'): Promise<void> {
+  async restoreToSession(partition = 'persist:mobile'): Promise<void> {
     const cookies = this.load();
     if (cookies.length === 0) return;
 
@@ -91,23 +92,11 @@ export class CookieStore {
     const webviewSession = session.fromPartition(partition);
 
     for (const cookie of cookies) {
-      const cookieDetails = { ...cookie } as any;
-      
-      if (cookieDetails.domain.startsWith('.')) {
-        cookieDetails.domain = cookieDetails.domain.substring(1);
-      }
-
-      // Remove read-only properties that Electron doesn't accept when setting
-      delete cookieDetails.hostOnly;
-      delete cookieDetails.session;
-      
-      const url = `https://${cookieDetails.domain}${cookieDetails.path}`;
+      const cookieDetails = this.toCookiesSetDetails(cookie);
+      if (!cookieDetails) continue;
       
       try {
-        await webviewSession.cookies.set({
-          url,
-          ...cookieDetails
-        } as CookiesSetDetails);
+        await webviewSession.cookies.set(cookieDetails);
       } catch (err) {
         console.warn('Failed to restore cookie:', cookie.name, err);
       }
@@ -132,6 +121,33 @@ export class CookieStore {
     return {
       'Cookie': cookieString,
       'X-CSRF-TOKEN': csrf,
+    };
+  }
+
+  /**
+   * Convert stored cookies into Electron's accepted set details.
+   */
+  private toCookiesSetDetails(cookie: Electron.Cookie): CookiesSetDetails | null {
+    const domain = cookie.domain?.startsWith('.')
+      ? cookie.domain.substring(1)
+      : cookie.domain;
+    const cookiePath = cookie.path || '/';
+
+    if (!domain) {
+      console.warn('Failed to restore cookie: missing domain for', cookie.name);
+      return null;
+    }
+
+    return {
+      url: `https://${domain}${cookiePath}`,
+      name: cookie.name,
+      value: cookie.value,
+      domain,
+      path: cookiePath,
+      secure: cookie.secure,
+      httpOnly: cookie.httpOnly,
+      expirationDate: cookie.expirationDate,
+      sameSite: cookie.sameSite,
     };
   }
 
