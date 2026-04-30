@@ -1,3 +1,27 @@
+const XINRENXINSHI_LOGIN_ORIGIN = 'https://e.xinrenxinshi.com';
+const XINRENXINSHI_LOGIN_URL = `${XINRENXINSHI_LOGIN_ORIGIN}/`;
+
+type WebViewUrlEvent = Event & {
+  url?: string;
+  preventDefault: () => void;
+};
+
+const isAllowedWebViewUrl = (targetUrl: string): boolean => {
+  try {
+    return new URL(targetUrl).origin === XINRENXINSHI_LOGIN_ORIGIN;
+  } catch {
+    return false;
+  }
+};
+
+const toSafeUrlForLog = (targetUrl: string): string => {
+  try {
+    return new URL(targetUrl).origin;
+  } catch {
+    return 'invalid-url';
+  }
+};
+
 /**
  * WebView 管理器
  * 负责创建、配置和销毁 WebView
@@ -59,9 +83,13 @@ export class WebViewManager {
       this.webview.id = 'mobile-webview';
       this.webview.className = 'mobile-webview';
       this.webview.setAttribute('partition', 'persist:mobile');
+      // Remote login content is intentionally isolated: no Node, no preload, no disabled web security.
+      this.webview.setAttribute('nodeintegration', 'false');
+      this.webview.setAttribute('disablewebsecurity', 'false');
+      this.webview.setAttribute('allowpopups', 'false');
       // 通过属性提前设置 UA，避免提前调用 getWebContentsId 触发错误
       this.webview.setAttribute('useragent', this.mobileUserAgent);
-      this.webview.src = 'https://e.xinrenxinshi.com';
+      this.webview.src = XINRENXINSHI_LOGIN_URL;
 
       this.container.appendChild(this.webview);
       console.log('WebView appended, container children:', this.container.childElementCount);
@@ -90,6 +118,14 @@ export class WebViewManager {
         window.electronAPI?.startCookieMonitoring?.(webContentsId);
         console.log('Cookie monitoring started');
       }
+    });
+
+    this.webview.addEventListener('will-navigate', (event) => {
+      this.guardWebViewUrl(event as WebViewUrlEvent, 'navigation');
+    });
+
+    this.webview.addEventListener('new-window', (event) => {
+      this.guardWebViewUrl(event as WebViewUrlEvent, 'new-window');
     });
 
     // Disable right-click context menu
@@ -169,8 +205,8 @@ export class WebViewManager {
     // 在当前任务队列后聚焦并加载登录页
     setTimeout(() => {
       this.webview?.focus();
-      if (this.webview && this.webview.getURL() !== 'https://e.xinrenxinshi.com/') {
-        this.webview.loadURL('https://e.xinrenxinshi.com/');
+      if (this.webview && this.webview.getURL() !== XINRENXINSHI_LOGIN_URL) {
+        this.webview.loadURL(XINRENXINSHI_LOGIN_URL);
       }
     }, 0);
   }
@@ -180,5 +216,13 @@ export class WebViewManager {
    */
   isCreated(): boolean {
     return this.webview !== null;
+  }
+
+  private guardWebViewUrl(event: WebViewUrlEvent, kind: 'navigation' | 'new-window'): void {
+    const targetUrl = event.url || '';
+    if (isAllowedWebViewUrl(targetUrl)) return;
+
+    event.preventDefault();
+    console.warn(`Blocked WebView ${kind}:`, toSafeUrlForLog(targetUrl));
   }
 }

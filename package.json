@@ -13,7 +13,8 @@
     "copy-assets": "node -e \"const fs=require('fs');fs.cpSync('assets','dist/assets',{recursive:true});\"",
     "dist": "npm run build && electron-builder",
     "lint": "eslint --ext .ts,.tsx .",
-    "test:s02": "node --test tests/s02-boundary-contract.test.mjs"
+    "test:s02": "node --test tests/s02-boundary-contract.test.mjs",
+    "test:s03": "node --test tests/s03-electron-security-contract.test.mjs"
   },
   "keywords": [],
   "author": {
