@@ -61,7 +61,7 @@ export class AttendanceAnalyzer {
     );
 
     if (!detailResult?.success || !detailResult.data?.signTimeList) {
-      console.warn('Failed to get detail for date:', dateStr);
+      this.warnMalformedAttendanceDetail(dateStr, detailResult?.error || 'missing signTimeList');
       return items;
     }
 
@@ -139,6 +139,13 @@ export class AttendanceAnalyzer {
     }
 
     return items;
+  }
+
+  /**
+   * 记录考勤详情异常，避免把缺失数据误判为无需补签。
+   */
+  private warnMalformedAttendanceDetail(date: string, reason: string): void {
+    console.warn('Malformed attendance detail response:', { date, reason });
   }
 
   /**
