@@ -10,6 +10,10 @@ An Electron-based desktop application for attendance management with features to
 - 📱 Built-in mobile simulator for login
 - 💾 Local data persistence
 
+## Project Baseline And Follow-Up Map
+
+M001 restored the local quality/security/failure-visibility baseline and captured deferred product and hardening work in [`docs/capability-gap-map.md`](docs/capability-gap-map.md). Read that map before starting follow-up work on configurable check-in strategy, history/resumability, diagnostics, safer storage, dependency upgrades, automated tests, or export/reporting.
+
 ## API Call Flow
 
 This application interacts with the backend through APIs provided in `src/api.ts`. Below is a detailed explanation of each API and its calling process.
