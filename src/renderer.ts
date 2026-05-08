@@ -158,15 +158,7 @@ async function verifyCookiesAndShowInfo(clearOnFailure = false): Promise<void> {
         if (confirmLogin) {
           // 重新创建 WebView，保证容器有内容且可见
           webviewManager.destroy();
-          webviewManager.create();
-          const webview = webviewManager.getWebView();
-          setTimeout(() => {
-            webview?.focus();
-            // 确保加载登录页
-            if (webview && webview.getURL() !== 'https://e.xinrenxinshi.com/') {
-              webview.loadURL('https://e.xinrenxinshi.com/');
-            }
-          }, 0);
+          webviewManager.showLoginPage();
         }
       }
     }
@@ -185,14 +177,7 @@ async function verifyCookiesAndShowInfo(clearOnFailure = false): Promise<void> {
       const confirmLogin = window.confirm('验证出错，需要重新登录。\n是否前往登录页？');
       if (confirmLogin) {
         webviewManager.destroy();
-        webviewManager.create();
-        const webview = webviewManager.getWebView();
-        setTimeout(() => {
-          webview?.focus();
-          if (webview && webview.getURL() !== 'https://e.xinrenxinshi.com/') {
-            webview.loadURL('https://e.xinrenxinshi.com/');
-          }
-        }, 0);
+        webviewManager.showLoginPage();
       }
     }
   }

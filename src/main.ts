@@ -1,4 +1,4 @@
-import { app, BrowserWindow } from 'electron';
+import { app, BrowserWindow, Menu } from 'electron';
 import path from 'node:path';
 import started from 'electron-squirrel-startup';
 import { registerIpcHandlers } from './main-lib/ipc-handlers';
@@ -16,10 +16,13 @@ const rendererDevServerUrl = process.env.VITE_DEV_SERVER_URL;
 registerIpcHandlers();
 
 const createWindow = async () => {
+  Menu.setApplicationMenu(null);
+
   // Create the browser window.
   const mainWindow = new BrowserWindow({
     width: 800,
     height: 600,
+    autoHideMenuBar: true,
     icon: path.join(__dirname, '../assets/icons/512x512.png'),
     webPreferences: {
       preload: path.join(__dirname, '../preload/index.js'),

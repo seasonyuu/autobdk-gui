@@ -46,17 +46,35 @@ export class WebViewManager {
   private updateDeviceMetrics(): void {
     if (!this.webview || !this.isEnvReady) return;
 
-    const containerWidth = this.container.clientWidth;
-    const containerHeight = this.container.clientHeight;
+    const webviewRect = this.webview.getBoundingClientRect();
+    const viewportWidth = Math.max(320, Math.round(webviewRect.width));
+    const viewportHeight = Math.max(480, Math.round(webviewRect.height));
 
     const webContentsId = this.webview.getWebContentsId();
     window.electronAPI?.enableDeviceEmulation?.(
       webContentsId,
-      containerWidth,
-      containerHeight
+      viewportWidth,
+      viewportHeight
     );
 
-    console.log(`Device metrics updated: ${containerWidth}x${containerHeight}`);
+    console.log(`Device metrics updated: ${viewportWidth}x${viewportHeight}`);
+  }
+
+  private loadLoginPageIfNeeded(): void {
+    if (!this.webview) return;
+
+    const currentUrl =
+      typeof this.webview.getURL === 'function'
+        ? this.webview.getURL()
+        : this.webview.getAttribute('src');
+
+    if (currentUrl === XINRENXINSHI_LOGIN_URL) return;
+
+    if (typeof this.webview.loadURL === 'function') {
+      this.webview.loadURL(XINRENXINSHI_LOGIN_URL);
+    } else {
+      this.webview.setAttribute('src', XINRENXINSHI_LOGIN_URL);
+    }
   }
 
   /**
@@ -133,7 +151,7 @@ export class WebViewManager {
       e.preventDefault();
     });
 
-    // Setup ResizeObserver to monitor container size changes
+    // Setup ResizeObserver to monitor the rendered WebView size used by device emulation.
     this.resizeObserver = new ResizeObserver(() => {
       // Debounce resize updates
       if (this.resizeTimeout !== null) {
@@ -145,7 +163,7 @@ export class WebViewManager {
       }, 300); // Wait 300ms after resize stops
     });
 
-    this.resizeObserver.observe(this.container);
+    this.resizeObserver.observe(this.webview);
 
     console.log('WebView created and initialized');
   }
@@ -202,13 +220,7 @@ export class WebViewManager {
     // 确保容器显示
     this.container.style.display = 'flex';
 
-    // 在当前任务队列后聚焦并加载登录页
-    setTimeout(() => {
-      this.webview?.focus();
-      if (this.webview && this.webview.getURL() !== XINRENXINSHI_LOGIN_URL) {
-        this.webview.loadURL(XINRENXINSHI_LOGIN_URL);
-      }
-    }, 0);
+    this.loadLoginPageIfNeeded();
   }
 
   /**

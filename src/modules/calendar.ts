@@ -1,5 +1,6 @@
 import type { AttendanceRecordSummary, IAttendanceRecordList } from '../types';
 import { escapeHtml } from '../utils/dom';
+import { iconSvg } from '../utils/icons';
 
 /**
  * 日历管理器
@@ -39,12 +40,12 @@ export class CalendarManager {
 
     let calendarHTML = `
       <div class="calendar-header">
-        <button class="calendar-nav-btn" id="prev-month-btn">◀ 上月</button>
+        <button class="calendar-nav-btn" id="prev-month-btn">${iconSvg('chevron-left')}<span>上月</span></button>
         <div class="calendar-title">
           <h3>${year}年 ${monthNames[month - 1]}</h3>
           <div class="calendar-period">${attendanceArchive.begin} - ${attendanceArchive.end}</div>
         </div>
-        <button class="calendar-nav-btn" id="next-month-btn">下月 ▶</button>
+        <button class="calendar-nav-btn" id="next-month-btn"><span>下月</span>${iconSvg('chevron-right')}</button>
       </div>
       <div class="calendar-weekdays">
         <div class="weekday">日</div>
@@ -106,7 +107,9 @@ export class CalendarManager {
           .filter((signTime) => signTime.statusDesc)
           .map((signTime) => signTime.statusDesc);
         if (statusDescList.length > 0) {
-          statusText = `<div class="day-status">${escapeHtml(statusDescList.join(', '))}</div>`;
+          const statusSummary = statusDescList.join(', ');
+          const escapedStatusSummary = escapeHtml(statusSummary);
+          statusText = `<div class="day-status" title="${escapedStatusSummary}">${escapedStatusSummary}</div>`;
         }
       }
 

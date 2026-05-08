@@ -1,6 +1,7 @@
 import type { ApprovalItem } from '../../types';
 import { AttendanceClockType } from '../../types';
 import { escapeHtml } from '../../utils/dom';
+import { iconSvg } from '../../utils/icons';
 
 /**
  * 补签对话框 UI 管理器
@@ -52,7 +53,7 @@ export class CheckinDialog {
   showError(message: string, detail?: string): void {
     this.content.innerHTML = `
       <div class="checkin-error">
-        <div class="checkin-error-icon">⚠️</div>
+        <div class="checkin-error-icon">${iconSvg('alert-circle')}</div>
         <div>${escapeHtml(message)}</div>
         ${detail ? `<div class="checkin-error-message">${escapeHtml(detail)}</div>` : ''}
       </div>
@@ -79,7 +80,7 @@ export class CheckinDialog {
     if (items.length === 0) {
       this.content.innerHTML = `
         <div class="checkin-preview-empty">
-          <div class="checkin-preview-empty-icon">✅</div>
+          <div class="checkin-preview-empty-icon">${iconSvg('check-circle')}</div>
           <div>本月考勤正常，无需补签</div>
         </div>
         <div class="checkin-actions">
@@ -98,7 +99,7 @@ export class CheckinDialog {
       .map(
         (item) => `
       <div class="checkin-item status-pending">
-        <div class="checkin-item-icon">⏸️</div>
+        <div class="checkin-item-icon">${iconSvg('pause-circle')}</div>
         <div class="checkin-item-type">${AttendanceClockType[item.clockType]}:</div>
         <div class="checkin-item-time">${escapeHtml(item.date)} ${escapeHtml(item.time)}</div>
         <div class="checkin-item-status">等待中</div>
@@ -190,7 +191,7 @@ export class CheckinDialog {
     const iconEl = itemEl.querySelector('.checkin-item-icon');
     const statusEl = itemEl.querySelector('.checkin-item-status');
 
-    if (iconEl) iconEl.textContent = icon;
+    if (iconEl) iconEl.innerHTML = icon;
     if (statusEl) statusEl.textContent = statusText;
 
     // 更新进度统计
@@ -243,7 +244,7 @@ export class CheckinDialog {
     this.content.innerHTML = `
       <div class="checkin-result">
         <div class="checkin-result-summary ${hasErrors ? 'has-errors' : ''}">
-          <div class="checkin-result-title">${hasErrors ? '⚠️ 补签完成（有失败）' : '✅ 补签完成'}</div>
+          <div class="checkin-result-title">${hasErrors ? `${iconSvg('alert-circle')} 补签完成（有失败）` : `${iconSvg('check-circle')} 补签完成`}</div>
           <div class="checkin-result-stats">
             成功: ${successCount} 条 | 失败: ${errorCount} 条
           </div>
@@ -280,25 +281,25 @@ export class CheckinDialog {
     switch (item.status) {
       case 'processing':
         return {
-          icon: '⏳',
+          icon: iconSvg('clock'),
           statusText: '处理中...',
           statusClass: 'status-processing',
         };
       case 'success':
         return {
-          icon: '✅',
+          icon: iconSvg('check-circle'),
           statusText: '成功',
           statusClass: 'status-success',
         };
       case 'error':
         return {
-          icon: '❌',
+          icon: iconSvg('x-circle'),
           statusText: item.error || '失败',
           statusClass: 'status-error',
         };
       default:
         return {
-          icon: '⏸️',
+          icon: iconSvg('pause-circle'),
           statusText: '等待中',
           statusClass: 'status-pending',
         };

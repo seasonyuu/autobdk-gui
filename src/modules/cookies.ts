@@ -1,5 +1,6 @@
 import type { CookieList, IpcResult } from '../types';
 import { escapeHtml } from '../utils/dom';
+import { iconSvg } from '../utils/icons';
 
 /**
  * Cookie 管理器
@@ -43,8 +44,8 @@ export class CookieManager {
                 <div class="cookie-item-meta">
                   Path: ${escapeHtml(cookiePath)} |
                   Expires: ${expiresText} |
-                  ${cookie.secure ? '🔒 Secure' : ''}
-                  ${cookie.httpOnly ? '🛡️ HttpOnly' : ''}
+                  ${cookie.secure ? `${iconSvg('shield', 'ui-icon cookie-meta-icon')} Secure` : ''}
+                  ${cookie.httpOnly ? `${iconSvg('shield', 'ui-icon cookie-meta-icon')} HttpOnly` : ''}
                   ${cookie.sameSite ? `SameSite: ${cookie.sameSite}` : ''}
                 </div>
               </div>
@@ -57,7 +58,7 @@ export class CookieManager {
         return `
         <li>
           <div class="cookie-domain" data-domain="${escapeHtml(domain)}">
-            <span class="cookie-domain-toggle">▼</span>
+            <span class="cookie-domain-toggle">${iconSvg('chevron-down', 'ui-icon cookie-toggle-icon')}</span>
             <span class="cookie-domain-name">${escapeHtml(domain)}</span>
             <span class="cookie-domain-count">(${domainCookies.length})</span>
           </div>
@@ -79,10 +80,10 @@ export class CookieManager {
 
         if (items.classList.contains('collapsed')) {
           items.classList.remove('collapsed');
-          if (toggle) toggle.textContent = '▼';
+          if (toggle) toggle.innerHTML = iconSvg('chevron-down', 'ui-icon cookie-toggle-icon');
         } else {
           items.classList.add('collapsed');
-          if (toggle) toggle.textContent = '▶';
+          if (toggle) toggle.innerHTML = iconSvg('chevron-right', 'ui-icon cookie-toggle-icon');
         }
       });
     });

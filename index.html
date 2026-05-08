@@ -2,30 +2,34 @@
 <html>
   <head>
     <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>考勤管理</title>
-
   </head>
   <body>
     <div class="top-bar">
-      <div class="app-title">考勤管理</div>
+      <div class="app-title">
+        <span class="app-mark" aria-hidden="true"></span>
+        <span class="app-title-text">考勤管理</span>
+        <span class="app-title-subtitle">Attendance Desk</span>
+      </div>
       <div class="top-bar-menu">
         <div class="settings-menu-container">
           <button id="settings-menu-btn" class="top-bar-btn">
             <span>设置</span>
-            <span class="menu-arrow">▼</span>
+            <svg class="ui-icon menu-arrow" viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path d="m6 9 6 6 6-6" /></svg>
           </button>
           <div id="settings-dropdown" class="settings-dropdown hidden">
             <div class="dropdown-header">设置选项</div>
             <button id="view-cookies-menu-item" class="dropdown-menu-item">
-              <span>📋</span>
+              <svg class="ui-icon" viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path d="M9 4h6l1 2h3v14H5V6h3l1-2Z"/><path d="M9 11h6"/><path d="M9 15h4"/></svg>
               <span>查看 Cookie</span>
             </button>
             <button id="open-login-menu-item" class="dropdown-menu-item">
-              <span>🔓</span>
+              <svg class="ui-icon" viewBox="0 0 24 24" aria-hidden="true" focusable="false"><rect x="5" y="10" width="14" height="10" rx="2"/><path d="M8 10V7a4 4 0 0 1 7.6-1.7"/></svg>
               <span>打开登录页</span>
             </button>
             <button id="clear-cookies-menu-item" class="dropdown-menu-item danger">
-              <span>🗑️</span>
+              <svg class="ui-icon" viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path d="M4 7h16"/><path d="M10 11v6"/><path d="M14 11v6"/><path d="M6 7l1 13h10l1-13"/><path d="M9 7V4h6v3"/></svg>
               <span>清空 Cookie</span>
             </button>
           </div>
@@ -33,7 +37,7 @@
         <div class="user-menu-container">
           <button id="user-menu-btn" class="top-bar-btn">
             <span id="user-display-name">未登录</span>
-            <span class="menu-arrow">▼</span>
+            <svg class="ui-icon menu-arrow" viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path d="m6 9 6 6 6-6" /></svg>
           </button>
           <div id="user-dropdown" class="user-dropdown hidden">
             <div class="dropdown-header">用户信息</div>
@@ -66,7 +70,7 @@
       <div class="dialog-container">
         <div class="dialog-header">
           <h3>Cookie 管理</h3>
-          <button id="close-dialog-btn" class="dialog-close-btn">✕</button>
+          <button id="close-dialog-btn" class="dialog-close-btn" aria-label="关闭"><svg class="ui-icon" viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path d="M6 6l12 12"/><path d="M18 6 6 18"/></svg></button>
         </div>
         <div class="dialog-body">
           <div id="cookie-dialog-display" class="cookie-dialog-display"></div>
@@ -82,7 +86,7 @@
       <div class="dialog-container checkin-dialog-container">
         <div class="dialog-header">
           <h3 id="checkin-dialog-title">一键打卡</h3>
-          <button id="checkin-dialog-close-btn" class="dialog-close-btn">✕</button>
+          <button id="checkin-dialog-close-btn" class="dialog-close-btn" aria-label="关闭"><svg class="ui-icon" viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path d="M6 6l12 12"/><path d="M18 6 6 18"/></svg></button>
         </div>
         <div class="dialog-body">
           <div id="checkin-dialog-content" class="checkin-dialog-content"></div>
