@@ -28,6 +28,20 @@ const dropdownCompany = document.getElementById('dropdown-company') as HTMLSpanE
 const dropdownEmployee = document.getElementById('dropdown-employee') as HTMLSpanElement;
 const dropdownCsrf = document.getElementById('dropdown-csrf') as HTMLDivElement;
 
+// App notice elements
+const appNotice = document.getElementById('app-notice') as HTMLDivElement;
+const appNoticeTitle = document.getElementById('app-notice-title') as HTMLDivElement;
+const appNoticeMessage = document.getElementById('app-notice-message') as HTMLDivElement;
+const appNoticeCloseBtn = document.getElementById('app-notice-close-btn') as HTMLButtonElement;
+
+// App confirm dialog elements
+const appConfirmDialog = document.getElementById('app-confirm-dialog') as HTMLDivElement;
+const appConfirmTitle = document.getElementById('app-confirm-title') as HTMLHeadingElement;
+const appConfirmMessage = document.getElementById('app-confirm-message') as HTMLParagraphElement;
+const appConfirmCloseBtn = document.getElementById('app-confirm-close-btn') as HTMLButtonElement;
+const appConfirmCancelBtn = document.getElementById('app-confirm-cancel-btn') as HTMLButtonElement;
+const appConfirmOkBtn = document.getElementById('app-confirm-ok-btn') as HTMLButtonElement;
+
 // Settings menu elements
 const settingsMenuBtn = document.getElementById('settings-menu-btn') as HTMLButtonElement;
 const settingsDropdown = document.getElementById('settings-dropdown') as HTMLDivElement;
@@ -62,7 +76,7 @@ const checkinDialogCloseBtn = document.getElementById('checkin-dialog-close-btn'
 const authManager = new AuthManager();
 const calendarManager = new CalendarManager(calendarContainer);
 const webviewManager = new WebViewManager(webviewContainer, leftContent, quickCheckinFab);
-const cookieManager = new CookieManager();
+const cookieManager = new CookieManager(showAppConfirm, showAppNotice);
 const settingsManager = new SettingsManager();
 let hasLoginPromptShown = false;
 
@@ -184,6 +198,68 @@ function saveCheckinSettings(): void {
   showCheckinSettingsMessage('补签时间设置已保存。', 'success');
 }
 
+type AppNoticeType = 'info' | 'success' | 'warning' | 'error';
+
+function showAppNotice(title: string, message: string, type: AppNoticeType = 'info'): void {
+  if (!appNotice || !appNoticeTitle || !appNoticeMessage) return;
+
+  appNoticeTitle.textContent = title;
+  appNoticeMessage.textContent = message;
+  appNotice.classList.remove('hidden', 'info', 'success', 'warning', 'error');
+  appNotice.classList.add(type);
+}
+
+function hideAppNotice(): void {
+  appNotice?.classList.add('hidden');
+}
+
+function showAppConfirm(title: string, message: string, confirmText = '确认'): Promise<boolean> {
+  if (!appConfirmDialog || !appConfirmTitle || !appConfirmMessage || !appConfirmOkBtn || !appConfirmCancelBtn) {
+    return Promise.resolve(false);
+  }
+
+  appConfirmTitle.textContent = title;
+  appConfirmMessage.textContent = message;
+  appConfirmOkBtn.textContent = confirmText;
+  appConfirmDialog.classList.remove('hidden');
+  appConfirmCancelBtn.focus();
+
+  return new Promise((resolve) => {
+    const finish = (confirmed: boolean): void => {
+      appConfirmDialog.classList.add('hidden');
+      appConfirmOkBtn.textContent = '确认';
+      appConfirmOkBtn.removeEventListener('click', onConfirm);
+      appConfirmCancelBtn.removeEventListener('click', onCancel);
+      appConfirmCloseBtn?.removeEventListener('click', onCancel);
+      appConfirmDialog.removeEventListener('click', onOverlayClick);
+      document.removeEventListener('keydown', onKeyDown);
+      resolve(confirmed);
+    };
+
+    const onConfirm = (): void => finish(true);
+    const onCancel = (): void => finish(false);
+    const onOverlayClick = (event: MouseEvent): void => {
+      if (event.target === appConfirmDialog) finish(false);
+    };
+    const onKeyDown = (event: KeyboardEvent): void => {
+      if (event.key === 'Escape') finish(false);
+    };
+
+    appConfirmOkBtn.addEventListener('click', onConfirm);
+    appConfirmCancelBtn.addEventListener('click', onCancel);
+    appConfirmCloseBtn?.addEventListener('click', onCancel);
+    appConfirmDialog.addEventListener('click', onOverlayClick);
+    document.addEventListener('keydown', onKeyDown);
+  });
+}
+
+function openLoginPageWithNotice(title: string, message: string, type: AppNoticeType = 'warning'): void {
+  // Avoid native alert/confirm: Electron 39 on Windows can break WebView keyboard input after native dialogs.
+  webviewManager.destroy();
+  webviewManager.showLoginPage();
+  showAppNotice(title, message, type);
+}
+
 /**
  * Verify cookies and display user info
  * @param clearOnFailure Whether to clear cookies if verification fails (true for startup, false for cookie updates)
@@ -196,6 +272,7 @@ async function verifyCookiesAndShowInfo(clearOnFailure = false): Promise<void> {
 
     if (result?.success && result.data) {
       hasLoginPromptShown = false; // 登录成功后允许下次再次提示
+      hideAppNotice();
       // Update top bar display
       authManager.updateTopBarDisplay(userDisplayName, 'loggedIn');
 
@@ -212,18 +289,15 @@ async function verifyCookiesAndShowInfo(clearOnFailure = false): Promise<void> {
 
       console.log('Cookie verification failed:', result?.error);
 
-      // Create WebView when login fails
-      webviewManager.create();
-
-      // 提示用户跳转登录（只提示一次，避免反复打扰）
       if (!hasLoginPromptShown) {
         hasLoginPromptShown = true;
-        const confirmLogin = window.confirm('登录状态已失效，需要重新登录。\n是否前往登录页？');
-        if (confirmLogin) {
-          // 重新创建 WebView，保证容器有内容且可见
-          webviewManager.destroy();
-          webviewManager.showLoginPage();
-        }
+        openLoginPageWithNotice(
+          '登录状态已失效',
+          '已为你打开登录页。请在页面中完成登录，应用会自动同步新的 Cookie。',
+          'warning'
+        );
+      } else {
+        webviewManager.create();
       }
     }
   } catch (error) {
@@ -232,22 +306,24 @@ async function verifyCookiesAndShowInfo(clearOnFailure = false): Promise<void> {
 
     console.error('Failed to verify cookies:', error);
 
-    // Create WebView on verification error
-    webviewManager.create();
-
-    // 出错时也提示一次跳转
     if (!hasLoginPromptShown) {
       hasLoginPromptShown = true;
-      const confirmLogin = window.confirm('验证出错，需要重新登录。\n是否前往登录页？');
-      if (confirmLogin) {
-        webviewManager.destroy();
-        webviewManager.showLoginPage();
-      }
+      openLoginPageWithNotice(
+        '登录验证出错',
+        '已为你打开登录页。请重新登录后再尝试获取考勤数据。',
+        'error'
+      );
+    } else {
+      webviewManager.create();
     }
   }
 }
 
 // ==================== Event Listeners ====================
+
+if (appNoticeCloseBtn) {
+  appNoticeCloseBtn.addEventListener('click', hideAppNotice);
+}
 
 // Settings menu toggle
 if (settingsMenuBtn && settingsDropdown) {
@@ -311,7 +387,7 @@ if (userMenuBtn && userDropdown) {
 
     const userInfo = authManager.getUserInfo();
     if (!userInfo) {
-      alert('未登录或登录信息不可用');
+      showAppNotice('尚未登录', '请先通过登录页完成登录，再查看用户信息。', 'warning');
       return;
     }
 
@@ -356,10 +432,17 @@ if (clearCookiesMenuItem) {
     // Close settings dropdown
     settingsDropdown?.classList.add('hidden');
 
+    const confirmed = await showAppConfirm(
+      '清空 Cookie',
+      '这会退出当前登录状态，并立即打开登录页用于重新登录。',
+      '清空 Cookie'
+    );
+    if (!confirmed) return;
+
     const result = await cookieManager.clearAll();
 
     if (result.success) {
-      alert('Cookie 已清空');
+      showAppNotice('Cookie 已清空', '已为你打开登录页，请重新登录。', 'success');
 
       // Reset auth state
       authManager.clear();
@@ -371,9 +454,10 @@ if (clearCookiesMenuItem) {
       calendarManager.clear();
 
       // Show WebView for re-login
-      webviewManager.create();
-    } else if (result.error !== 'User cancelled') {
-      alert('清空失败: ' + result.error);
+      webviewManager.destroy();
+      webviewManager.showLoginPage();
+    } else {
+      showAppNotice('清空失败', result.error || '未知错误', 'error');
     }
   });
 }
@@ -405,7 +489,7 @@ if (quickCheckinFab) {
 
     // Check if logged in
     if (!csrf || !userInfo || !yearmo) {
-      alert('请先登录');
+      showAppNotice('请先登录', '登录完成后再使用一键打卡。', 'warning');
       return;
     }
 

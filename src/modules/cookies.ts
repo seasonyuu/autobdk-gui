@@ -7,6 +7,11 @@ import { iconSvg } from '../utils/icons';
  * 负责 Cookie 的查看、删除和管理
  */
 export class CookieManager {
+  constructor(
+    private confirmAction: (title: string, message: string, confirmText?: string) => Promise<boolean> = async () => true,
+    private notify: (title: string, message: string, type?: 'info' | 'success' | 'warning' | 'error') => void = () => undefined
+  ) {}
+
   /**
    * 渲染 Cookie 树形结构
    */
@@ -98,11 +103,16 @@ export class CookieManager {
 
         if (!name || !domain || !path) {
           console.warn('Cookie delete skipped: missing cookie identity attributes');
-          alert('删除失败: Cookie 信息不完整');
+          this.notify('删除失败', 'Cookie 信息不完整。', 'error');
           return;
         }
 
-        if (!confirm(`确定要删除 Cookie "${name}" 吗？`)) return;
+        const confirmed = await this.confirmAction(
+          '删除 Cookie',
+          `确定要删除 Cookie "${name}" 吗？`,
+          '删除'
+        );
+        if (!confirmed) return;
 
         const result = await window.electronAPI?.deleteCookieFromFile?.(
           name,
@@ -116,7 +126,7 @@ export class CookieManager {
           const cookies = await window.electronAPI?.loadCookies?.();
           this.renderCookieTree(cookies || [], container);
         } else {
-          alert('删除失败: ' + (result?.error || 'Unknown error'));
+          this.notify('删除失败', result?.error || 'Unknown error', 'error');
         }
       });
     });
@@ -126,11 +136,6 @@ export class CookieManager {
    * 清空所有 Cookies
    */
   async clearAll(): Promise<IpcResult> {
-    const confirmed = confirm('确定要清空所有 Cookie 吗？这将退出登录状态。');
-    if (!confirmed) {
-      return { success: false, error: 'User cancelled' };
-    }
-
     const result = await window.electronAPI?.clearCookiesFile?.();
 
     if (result?.success) {

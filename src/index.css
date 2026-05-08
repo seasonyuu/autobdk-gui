@@ -102,6 +102,126 @@ button:focus-visible,
   backdrop-filter: blur(18px) saturate(1.2);
 }
 
+.app-notice {
+  position: fixed;
+  top: calc(var(--topbar-height) + 14px);
+  left: 50%;
+  z-index: 1600;
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 12px;
+  width: min(560px, calc(100vw - 28px));
+  padding: 12px 12px 12px 14px;
+  color: var(--ink);
+  background: rgba(255, 250, 242, 0.94);
+  border: 1px solid rgba(255, 255, 255, 0.72);
+  border-left: 5px solid var(--accent);
+  border-radius: 18px;
+  box-shadow: var(--shadow-md);
+  transform: translateX(-50%);
+  backdrop-filter: blur(18px) saturate(1.25);
+  animation: notice-in 0.24s cubic-bezier(0.2, 0.8, 0.2, 1) both;
+}
+
+.app-notice.hidden {
+  display: none;
+}
+
+.app-notice.warning {
+  border-left-color: var(--warn);
+}
+
+.app-notice.error {
+  border-left-color: var(--danger);
+}
+
+.app-notice.success {
+  border-left-color: var(--success);
+}
+
+.app-notice-mark {
+  width: 13px;
+  height: 42px;
+  border-radius: 999px;
+  background: linear-gradient(180deg, var(--accent), #e7b76a);
+  box-shadow: 0 8px 18px rgba(15, 118, 110, 0.22);
+}
+
+.app-notice.warning .app-notice-mark {
+  background: linear-gradient(180deg, var(--warn), #f1c376);
+}
+
+.app-notice.error .app-notice-mark {
+  background: linear-gradient(180deg, var(--danger), #e89b86);
+}
+
+.app-notice.success .app-notice-mark {
+  background: linear-gradient(180deg, var(--success), #9fcea8);
+}
+
+.app-notice-copy {
+  min-width: 0;
+}
+
+.app-notice-title {
+  margin-bottom: 3px;
+  font-size: 14px;
+  font-weight: 950;
+  letter-spacing: -0.03em;
+}
+
+.app-notice-message {
+  color: var(--ink-muted);
+  font-size: 12px;
+  font-weight: 700;
+  line-height: 1.45;
+}
+
+.app-notice-close-btn {
+  display: grid;
+  place-items: center;
+  width: 32px;
+  height: 32px;
+  padding: 0;
+  color: var(--ink-muted);
+  background: rgba(29, 37, 34, 0.05);
+  border: 1px solid var(--line);
+  border-radius: 999px;
+  cursor: pointer;
+  transition: transform 0.16s ease, background 0.16s ease, color 0.16s ease;
+}
+
+.app-notice-close-btn:hover {
+  transform: rotate(8deg);
+  color: var(--danger);
+  background: white;
+}
+
+.app-confirm-container {
+  max-width: 520px;
+}
+
+.app-confirm-body {
+  padding-bottom: 8px;
+}
+
+.app-confirm-message {
+  margin: 0;
+  color: var(--ink-muted);
+  font-size: 14px;
+  font-weight: 700;
+  line-height: 1.65;
+}
+
+.app-confirm-container .checkin-btn-primary {
+  background: var(--danger);
+}
+
+.app-confirm-container .checkin-btn-primary:hover {
+  background: #9f2525;
+}
+
 .app-title {
   display: flex;
   align-items: center;
@@ -1521,6 +1641,17 @@ button:focus-visible,
   }
 }
 
+@keyframes notice-in {
+  from {
+    opacity: 0;
+    transform: translate(-50%, -8px) scale(0.98);
+  }
+  to {
+    opacity: 1;
+    transform: translate(-50%, 0) scale(1);
+  }
+}
+
 @keyframes menu-in {
   from {
     opacity: 0;
@@ -1644,6 +1775,26 @@ button:focus-visible,
 
   .app-title-text {
     font-size: 15px;
+  }
+
+  .app-notice {
+    top: calc(var(--topbar-height) + 8px);
+    grid-template-columns: minmax(0, 1fr) auto;
+    gap: 8px;
+    padding: 11px 10px 11px 12px;
+    border-left-width: 4px;
+  }
+
+  .app-notice-mark {
+    display: none;
+  }
+
+  .app-notice-title {
+    font-size: 13px;
+  }
+
+  .app-notice-message {
+    font-size: 11px;
   }
 
   .top-bar-btn span:first-child:not(#user-display-name) {

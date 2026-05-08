@@ -62,11 +62,38 @@
         </div>
       </div>
     </div>
+    <div id="app-notice" class="app-notice hidden" role="status" aria-live="polite">
+      <div class="app-notice-mark" aria-hidden="true"></div>
+      <div class="app-notice-copy">
+        <div id="app-notice-title" class="app-notice-title">提示</div>
+        <div id="app-notice-message" class="app-notice-message"></div>
+      </div>
+      <button id="app-notice-close-btn" class="app-notice-close-btn" aria-label="关闭提示">
+        <svg class="ui-icon" viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path d="M6 6l12 12"/><path d="M18 6 6 18"/></svg>
+      </button>
+    </div>
     <div class="container">
       <div class="left-content">
         <div id="calendar-container" class="calendar-container"></div>
       </div>
       <div id="webview-container"></div>
+    </div>
+
+    <!-- App Confirm Dialog Modal -->
+    <div id="app-confirm-dialog" class="dialog-overlay hidden">
+      <div class="dialog-container app-confirm-container" role="dialog" aria-modal="true" aria-labelledby="app-confirm-title" aria-describedby="app-confirm-message">
+        <div class="dialog-header">
+          <h3 id="app-confirm-title">确认操作</h3>
+          <button id="app-confirm-close-btn" class="dialog-close-btn" aria-label="关闭"><svg class="ui-icon" viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path d="M6 6l12 12"/><path d="M18 6 6 18"/></svg></button>
+        </div>
+        <div class="dialog-body app-confirm-body">
+          <p id="app-confirm-message" class="app-confirm-message"></p>
+        </div>
+        <div class="settings-dialog-actions">
+          <button id="app-confirm-cancel-btn" class="checkin-btn checkin-btn-cancel">取消</button>
+          <button id="app-confirm-ok-btn" class="checkin-btn checkin-btn-primary">确认</button>
+        </div>
+      </div>
     </div>
 
     <!-- Check-in Settings Dialog Modal -->
