@@ -1,9 +1,8 @@
-import type { ApprovalItem, AttendanceRecordSummary, AttendanceSignTime } from '../../types';
+import type { ApprovalItem, AttendanceRecordSummary, AttendanceSignTime, CheckinTimeSettings } from '../../types';
 import { AttendanceSituation } from '../../types';
 import { parseTimestamp, formatDate, formatTime } from '../../utils/date';
+import { DEFAULT_CHECKIN_TIME_SETTINGS } from '../settings';
 
-const HOUR_START = 10;
-const HOUR_END = 19;
 
 /**
  * 考勤分析器
@@ -12,7 +11,8 @@ const HOUR_END = 19;
 export class AttendanceAnalyzer {
   constructor(
     private csrf: string,
-    private yearmo: string
+    private yearmo: string,
+    private timeSettings: CheckinTimeSettings = DEFAULT_CHECKIN_TIME_SETTINGS
   ) {}
 
   /**
@@ -87,13 +87,18 @@ export class AttendanceAnalyzer {
     let bdkBegin: string | null = null;
     let bdkEnd: string | null = null;
 
+    const { startTime, endTime } = this.getConfiguredTimes();
+    const startMinutes = this.toMinutes(startTime);
+    const endMinutes = this.toMinutes(endTime);
+
     if (bdkResult?.success && bdkResult.data) {
       for (const approve of bdkResult.data) {
-        const { hour } = parseTimestamp(approve.startDate);
-        if (hour <= HOUR_START) {
-          bdkBegin = formatTime(hour, parseTimestamp(approve.startDate).minute);
-        } else if (hour >= HOUR_END) {
-          bdkEnd = formatTime(hour, parseTimestamp(approve.startDate).minute);
+        const { hour, minute } = parseTimestamp(approve.startDate);
+        const approveMinutes = hour * 60 + minute;
+        if (approveMinutes <= startMinutes) {
+          bdkBegin = formatTime(hour, minute);
+        } else if (approveMinutes >= endMinutes) {
+          bdkEnd = formatTime(hour, minute);
         }
       }
     }
@@ -106,7 +111,7 @@ export class AttendanceAnalyzer {
     if (!bdkBegin && (!timeBegin.clockTime || timeBegin.statusDesc)) {
       items.push({
         date: formatDate(recordTime),
-        time: formatTime(HOUR_START, 0),
+        time: startTime,
         clockType: timeBegin.clockAttribution,
         rangeId: timeBegin.rangeId,
         timestamp: recordTime,
@@ -116,21 +121,19 @@ export class AttendanceAnalyzer {
 
     // 检查是否需要补签下班
     if (!bdkEnd && (!timeEnd.clockTime || timeEnd.statusDesc)) {
-      let hour = HOUR_END;
-      let minute = 0;
+      let approvalTime = endTime;
 
-      // 如果已经打卡上班且时间晚于下班时间，使用上班时间+1分钟
+      // 如果已经打卡上班且时间晚于下班补签时间，使用上班时间+1分钟
       if (timeBegin.clockTime) {
-        const [beginHour, beginMinute] = timeBegin.clockTime.split(':').map(Number);
-        if (beginHour >= HOUR_END) {
-          hour = beginHour;
-          minute = beginMinute + 1;
+        const beginMinutes = this.toMinutes(timeBegin.clockTime);
+        if (beginMinutes >= endMinutes) {
+          approvalTime = this.fromMinutes(Math.min(beginMinutes + 1, 23 * 60 + 59));
         }
       }
 
       items.push({
         date: formatDate(recordTime),
-        time: formatTime(hour, minute),
+        time: approvalTime,
         clockType: timeEnd.clockAttribution,
         rangeId: timeEnd.rangeId,
         timestamp: recordTime,
@@ -146,6 +149,24 @@ export class AttendanceAnalyzer {
    */
   private warnMalformedAttendanceDetail(date: string, reason: string): void {
     console.warn('Malformed attendance detail response:', { date, reason });
+  }
+
+  private getConfiguredTimes(): CheckinTimeSettings {
+    return {
+      startTime: this.timeSettings.startTime,
+      endTime: this.timeSettings.endTime,
+    };
+  }
+
+  private toMinutes(value: string): number {
+    const [hour, minute] = value.split(':').map(Number);
+    return hour * 60 + minute;
+  }
+
+  private fromMinutes(value: number): string {
+    const hour = Math.floor(value / 60);
+    const minute = value % 60;
+    return formatTime(hour, minute);
   }
 
   /**

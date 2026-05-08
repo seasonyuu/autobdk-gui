@@ -20,6 +20,10 @@
           </button>
           <div id="settings-dropdown" class="settings-dropdown hidden">
             <div class="dropdown-header">设置选项</div>
+            <button id="checkin-settings-menu-item" class="dropdown-menu-item">
+              <svg class="ui-icon" viewBox="0 0 24 24" aria-hidden="true" focusable="false"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/></svg>
+              <span>补签时间设置</span>
+            </button>
             <button id="view-cookies-menu-item" class="dropdown-menu-item">
               <svg class="ui-icon" viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path d="M9 4h6l1 2h3v14H5V6h3l1-2Z"/><path d="M9 11h6"/><path d="M9 15h4"/></svg>
               <span>查看 Cookie</span>
@@ -63,6 +67,34 @@
         <div id="calendar-container" class="calendar-container"></div>
       </div>
       <div id="webview-container"></div>
+    </div>
+
+    <!-- Check-in Settings Dialog Modal -->
+    <div id="checkin-settings-dialog" class="dialog-overlay hidden">
+      <div class="dialog-container settings-dialog-container">
+        <div class="dialog-header">
+          <h3>补签时间设置</h3>
+          <button id="checkin-settings-close-btn" class="dialog-close-btn" aria-label="关闭"><svg class="ui-icon" viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path d="M6 6l12 12"/><path d="M18 6 6 18"/></svg></button>
+        </div>
+        <div class="dialog-body settings-dialog-body">
+          <p class="settings-dialog-help">设置一键打卡自动生成补签申请时使用的上班和下班时间。</p>
+          <div class="settings-form-grid">
+            <label class="settings-field" for="checkin-start-time-input">
+              <span class="settings-field-label">上班补签时间</span>
+              <input id="checkin-start-time-input" class="settings-time-input" type="time" step="60" />
+            </label>
+            <label class="settings-field" for="checkin-end-time-input">
+              <span class="settings-field-label">下班补签时间</span>
+              <input id="checkin-end-time-input" class="settings-time-input" type="time" step="60" />
+            </label>
+          </div>
+          <div id="checkin-settings-message" class="settings-message" aria-live="polite"></div>
+        </div>
+        <div class="settings-dialog-actions">
+          <button id="checkin-settings-reset-btn" class="checkin-btn checkin-btn-cancel">恢复默认</button>
+          <button id="checkin-settings-save-btn" class="checkin-btn checkin-btn-primary">保存设置</button>
+        </div>
+      </div>
     </div>
 
     <!-- Cookie Dialog Modal -->

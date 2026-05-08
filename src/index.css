@@ -830,6 +830,86 @@ button:focus-visible,
   min-height: 220px;
 }
 
+.settings-dialog-container {
+  max-width: 560px;
+}
+
+.settings-dialog-body {
+  padding: 20px 22px 10px;
+}
+
+.settings-dialog-help {
+  margin: 0 0 16px;
+  color: var(--ink-muted);
+  font-size: 14px;
+  font-weight: 650;
+  line-height: 1.6;
+}
+
+.settings-form-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 14px;
+}
+
+.settings-field {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  padding: 14px;
+  background: rgba(255, 255, 255, 0.52);
+  border: 1px solid var(--line);
+  border-radius: var(--radius-md);
+}
+
+.settings-field-label {
+  color: var(--ink-muted);
+  font-size: 12px;
+  font-weight: 900;
+}
+
+.settings-time-input {
+  width: 100%;
+  min-height: 42px;
+  padding: 0 12px;
+  color: var(--ink);
+  background: var(--surface-solid);
+  border: 1px solid var(--line);
+  border-radius: 999px;
+  font-size: 18px;
+  font-weight: 900;
+}
+
+.settings-time-input:focus {
+  border-color: rgba(15, 118, 110, 0.42);
+  outline: 3px solid rgba(15, 118, 110, 0.16);
+}
+
+.settings-message {
+  min-height: 20px;
+  margin-top: 14px;
+  color: var(--ink-muted);
+  font-size: 13px;
+  font-weight: 750;
+}
+
+.settings-message.success {
+  color: var(--success);
+}
+
+.settings-message.error {
+  color: var(--danger);
+}
+
+.settings-dialog-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 10px;
+  padding: 16px 22px 20px;
+  background: linear-gradient(to top, var(--surface-solid) 72%, rgba(255, 250, 242, 0.92));
+  border-top: 1px solid var(--line);
+}
+
 .button-group {
   display: flex;
   gap: 10px;
@@ -1606,6 +1686,16 @@ button:focus-visible,
 
   .dialog-header,
   .dialog-body {
+    padding-left: 16px;
+    padding-right: 16px;
+  }
+
+  .settings-form-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .settings-dialog-actions {
+    flex-direction: column-reverse;
     padding-left: 16px;
     padding-right: 16px;
   }

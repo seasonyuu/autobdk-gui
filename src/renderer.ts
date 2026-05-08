@@ -8,6 +8,7 @@ import { CalendarManager } from './modules/calendar';
 import { WebViewManager } from './modules/webview';
 import { CookieManager } from './modules/cookies';
 import { CheckinManager } from './modules/checkin';
+import { SettingsManager } from './modules/settings';
 import { getAdjacentMonth } from './utils/date';
 import { toggleDropdown, closeAllDropdowns } from './utils/dom';
 
@@ -30,6 +31,7 @@ const dropdownCsrf = document.getElementById('dropdown-csrf') as HTMLDivElement;
 // Settings menu elements
 const settingsMenuBtn = document.getElementById('settings-menu-btn') as HTMLButtonElement;
 const settingsDropdown = document.getElementById('settings-dropdown') as HTMLDivElement;
+const checkinSettingsMenuItem = document.getElementById('checkin-settings-menu-item') as HTMLButtonElement;
 const viewCookiesMenuItem = document.getElementById('view-cookies-menu-item') as HTMLButtonElement;
 const openLoginMenuItem = document.getElementById('open-login-menu-item') as HTMLButtonElement;
 const clearCookiesMenuItem = document.getElementById('clear-cookies-menu-item') as HTMLButtonElement;
@@ -38,6 +40,15 @@ const clearCookiesMenuItem = document.getElementById('clear-cookies-menu-item') 
 const cookieDialog = document.getElementById('cookie-dialog') as HTMLDivElement;
 const cookieDialogDisplay = document.getElementById('cookie-dialog-display') as HTMLDivElement;
 const closeDialogBtn = document.getElementById('close-dialog-btn') as HTMLButtonElement;
+
+// Check-in settings dialog elements
+const checkinSettingsDialog = document.getElementById('checkin-settings-dialog') as HTMLDivElement;
+const checkinSettingsCloseBtn = document.getElementById('checkin-settings-close-btn') as HTMLButtonElement;
+const checkinStartTimeInput = document.getElementById('checkin-start-time-input') as HTMLInputElement;
+const checkinEndTimeInput = document.getElementById('checkin-end-time-input') as HTMLInputElement;
+const checkinSettingsMessage = document.getElementById('checkin-settings-message') as HTMLDivElement;
+const checkinSettingsResetBtn = document.getElementById('checkin-settings-reset-btn') as HTMLButtonElement;
+const checkinSettingsSaveBtn = document.getElementById('checkin-settings-save-btn') as HTMLButtonElement;
 
 // Quick check-in elements
 const quickCheckinFab = document.getElementById('quick-checkin-fab') as HTMLButtonElement;
@@ -52,6 +63,7 @@ const authManager = new AuthManager();
 const calendarManager = new CalendarManager(calendarContainer);
 const webviewManager = new WebViewManager(webviewContainer, leftContent, quickCheckinFab);
 const cookieManager = new CookieManager();
+const settingsManager = new SettingsManager();
 let hasLoginPromptShown = false;
 
 // ==================== Helper Functions ====================
@@ -118,6 +130,58 @@ async function loadCurrentMonthAttendance(): Promise<void> {
     console.error('Error fetching attendance records:', error);
     calendarManager.showError('获取考勤记录时出错');
   }
+}
+
+function toMinutes(time: string): number {
+  const [hour, minute] = time.split(':').map(Number);
+  return hour * 60 + minute;
+}
+
+function showCheckinSettingsMessage(message: string, type: 'success' | 'error' | 'neutral' = 'neutral'): void {
+  if (!checkinSettingsMessage) return;
+
+  checkinSettingsMessage.textContent = message;
+  checkinSettingsMessage.classList.remove('success', 'error');
+  if (type !== 'neutral') {
+    checkinSettingsMessage.classList.add(type);
+  }
+}
+
+function populateCheckinSettingsForm(): void {
+  const settings = settingsManager.loadCheckinTimeSettings();
+  if (checkinStartTimeInput) checkinStartTimeInput.value = settings.startTime;
+  if (checkinEndTimeInput) checkinEndTimeInput.value = settings.endTime;
+  showCheckinSettingsMessage('当前设置会用于下一次一键打卡分析。');
+}
+
+function openCheckinSettingsDialog(): void {
+  populateCheckinSettingsForm();
+  checkinSettingsDialog?.classList.remove('hidden');
+  checkinStartTimeInput?.focus();
+}
+
+function closeCheckinSettingsDialog(): void {
+  checkinSettingsDialog?.classList.add('hidden');
+}
+
+function saveCheckinSettings(): void {
+  const startTime = checkinStartTimeInput?.value || '';
+  const endTime = checkinEndTimeInput?.value || '';
+
+  if (!startTime || !endTime) {
+    showCheckinSettingsMessage('请填写上班和下班补签时间。', 'error');
+    return;
+  }
+
+  if (toMinutes(startTime) >= toMinutes(endTime)) {
+    showCheckinSettingsMessage('上班补签时间必须早于下班补签时间。', 'error');
+    return;
+  }
+
+  const savedSettings = settingsManager.saveCheckinTimeSettings({ startTime, endTime });
+  if (checkinStartTimeInput) checkinStartTimeInput.value = savedSettings.startTime;
+  if (checkinEndTimeInput) checkinEndTimeInput.value = savedSettings.endTime;
+  showCheckinSettingsMessage('补签时间设置已保存。', 'success');
 }
 
 /**
@@ -194,6 +258,39 @@ if (settingsMenuBtn && settingsDropdown) {
 
   settingsDropdown.addEventListener('click', (e) => {
     e.stopPropagation();
+  });
+}
+
+// Check-in time settings menu item
+if (checkinSettingsMenuItem) {
+  checkinSettingsMenuItem.addEventListener('click', () => {
+    settingsDropdown?.classList.add('hidden');
+    openCheckinSettingsDialog();
+  });
+}
+
+if (checkinSettingsCloseBtn) {
+  checkinSettingsCloseBtn.addEventListener('click', closeCheckinSettingsDialog);
+}
+
+if (checkinSettingsDialog) {
+  checkinSettingsDialog.addEventListener('click', (e) => {
+    if (e.target === checkinSettingsDialog) {
+      closeCheckinSettingsDialog();
+    }
+  });
+}
+
+if (checkinSettingsSaveBtn) {
+  checkinSettingsSaveBtn.addEventListener('click', saveCheckinSettings);
+}
+
+if (checkinSettingsResetBtn) {
+  checkinSettingsResetBtn.addEventListener('click', () => {
+    const defaultSettings = settingsManager.resetCheckinTimeSettings();
+    if (checkinStartTimeInput) checkinStartTimeInput.value = defaultSettings.startTime;
+    if (checkinEndTimeInput) checkinEndTimeInput.value = defaultSettings.endTime;
+    showCheckinSettingsMessage('已恢复默认补签时间。', 'success');
   });
 }
 
@@ -319,6 +416,7 @@ if (quickCheckinFab) {
       checkinDialogContent,
       csrf,
       yearmo,
+      settingsManager.loadCheckinTimeSettings(),
       async () => {
         // Refresh calendar callback
         await loadCurrentMonthAttendance();

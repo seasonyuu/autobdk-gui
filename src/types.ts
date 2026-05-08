@@ -36,6 +36,11 @@ export interface ApprovalItem {
   error?: string;
 }
 
+export interface CheckinTimeSettings {
+  startTime: string; // "HH:mm"
+  endTime: string; // "HH:mm"
+}
+
 /**
  * 考勤打卡类型枚举
  */

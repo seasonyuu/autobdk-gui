@@ -1,4 +1,4 @@
-import type { ApprovalItem } from '../../types';
+import type { ApprovalItem, CheckinTimeSettings } from '../../types';
 import { AttendanceAnalyzer } from './analyzer';
 import { CheckinDialog } from './ui';
 import { CheckinExecutor } from './executor';
@@ -18,6 +18,7 @@ export class CheckinManager {
     contentElement: HTMLDivElement,
     private csrf: string,
     private yearmo: string,
+    private timeSettings: CheckinTimeSettings,
     private onRefreshCalendar: () => Promise<void>
   ) {
     this.dialog = new CheckinDialog(dialogElement, titleElement, contentElement);
@@ -38,7 +39,7 @@ export class CheckinManager {
 
     try {
       // 分析考勤数据
-      const analyzer = new AttendanceAnalyzer(this.csrf, this.yearmo);
+      const analyzer = new AttendanceAnalyzer(this.csrf, this.yearmo, this.timeSettings);
       this.items = await analyzer.analyze();
 
       console.log('Found', this.items.length, 'items to approve');
