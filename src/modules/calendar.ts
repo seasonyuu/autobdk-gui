@@ -7,6 +7,13 @@ import { iconSvg } from '../utils/icons';
  * 负责日历的渲染和显示
  */
 export class CalendarManager {
+  private detailDialog: HTMLDivElement | null = null;
+  private readonly closeDetailDialogOnEscape = (event: KeyboardEvent): void => {
+    if (event.key === 'Escape') {
+      this.hideDetailDialog();
+    }
+  };
+
   constructor(private container: HTMLDivElement) {}
 
   /**
@@ -114,7 +121,7 @@ export class CalendarManager {
       }
 
       calendarHTML += `
-        <div class="${dayClass}" data-date="${date}">
+        <div class="${dayClass}" data-date="${date}" role="button" tabindex="0" aria-label="查看 ${date} 日考勤详情">
           <div class="day-number">${date}</div>
           ${lunarShow ? `<div class="day-lunar">${escapeHtml(lunarShow)}</div>` : ''}
           ${statusText}
@@ -138,7 +145,121 @@ export class CalendarManager {
       nextBtn.addEventListener('click', () => onMonthChange(1));
     }
 
+    this.container.querySelectorAll<HTMLElement>('.calendar-day:not(.empty)').forEach((dayEl) => {
+      const day = Number(dayEl.dataset.date);
+      const record = records.find((item) => item.date === day && item.monthStatus === 0);
+      if (!record) return;
+
+      dayEl.addEventListener('click', () => this.showDetailDialog(record));
+      dayEl.addEventListener('keydown', (event) => {
+        if (event.key !== 'Enter' && event.key !== ' ') return;
+
+        event.preventDefault();
+        this.showDetailDialog(record);
+      });
+    });
+
     console.log('Calendar rendered');
+  }
+
+  /**
+   * 显示日期详情对话框
+   */
+  private showDetailDialog(record: AttendanceRecordSummary): void {
+    const dialog = this.ensureDetailDialog();
+    dialog.innerHTML = this.renderDetailDialog(record);
+    dialog.classList.remove('hidden');
+
+    const closeBtn = dialog.querySelector<HTMLButtonElement>('.calendar-detail-close');
+    closeBtn?.addEventListener('click', () => this.hideDetailDialog());
+    closeBtn?.focus();
+
+    document.addEventListener('keydown', this.closeDetailDialogOnEscape);
+  }
+
+  private hideDetailDialog(): void {
+    this.detailDialog?.classList.add('hidden');
+    document.removeEventListener('keydown', this.closeDetailDialogOnEscape);
+  }
+
+  private ensureDetailDialog(): HTMLDivElement {
+    if (this.detailDialog) return this.detailDialog;
+
+    const dialog = document.createElement('div');
+    dialog.className = 'dialog-overlay calendar-detail-overlay hidden';
+    dialog.addEventListener('click', (event) => {
+      if (event.target === dialog) {
+        this.hideDetailDialog();
+      }
+    });
+
+    document.body.appendChild(dialog);
+    this.detailDialog = dialog;
+    return dialog;
+  }
+
+  private renderDetailDialog(record: AttendanceRecordSummary): string {
+    const recordDate = new Date(record.time * 1000);
+    const dateTitle = `${recordDate.getFullYear()}年${recordDate.getMonth() + 1}月${record.date}日`;
+    const workdayText = record.isWorkday === 1 ? '工作日' : '休息日';
+    const situationText = record.situation === -1 ? '考勤异常' : '考勤正常';
+    const situationClass = record.situation === -1 ? 'is-warning' : 'is-normal';
+    const signTimeList = record.detailInfo?.signTimeList || [];
+    const abnormalMessages = signTimeList
+      .map((item) => item.statusDesc)
+      .filter((statusDesc) => statusDesc);
+
+    const signRows = signTimeList.length > 0
+      ? signTimeList
+        .map((item) => {
+          const statusDesc = item.statusDesc || '正常';
+          const rowClass = item.statusDesc ? 'has-warning' : 'is-normal';
+
+          return `
+            <div class="calendar-detail-record ${rowClass}">
+              <div class="calendar-detail-record-main">
+                <span class="calendar-detail-record-type">${escapeHtml(item.rangeName || AttendanceClockType[item.clockAttribution])}</span>
+                <span class="calendar-detail-record-time">${escapeHtml(item.clockTime || '--:--')}</span>
+              </div>
+              <div class="calendar-detail-record-status">${escapeHtml(statusDesc)}</div>
+            </div>
+          `;
+        })
+        .join('')
+      : `
+        <div class="calendar-detail-empty">
+          ${iconSvg('clock')}
+          <span>暂无打卡明细</span>
+        </div>
+      `;
+
+    const abnormalSummary = abnormalMessages.length > 0
+      ? `<div class="calendar-detail-alert">${iconSvg('alert-circle')}<span>${escapeHtml(abnormalMessages.join('、'))}</span></div>`
+      : '';
+
+    return `
+      <div class="dialog-container calendar-detail-container" role="dialog" aria-modal="true" aria-labelledby="calendar-detail-title">
+        <div class="dialog-header calendar-detail-header">
+          <div>
+            <h3 id="calendar-detail-title">${escapeHtml(dateTitle)}</h3>
+            <div class="calendar-detail-subtitle">${escapeHtml(record.lunarShow || '无农历信息')}</div>
+          </div>
+          <button class="dialog-close-btn calendar-detail-close" aria-label="关闭日期详情">${iconSvg('x')}</button>
+        </div>
+        <div class="dialog-body calendar-detail-body">
+          <div class="calendar-detail-badges">
+            <span class="calendar-detail-badge">${escapeHtml(workdayText)}</span>
+            <span class="calendar-detail-badge ${situationClass}">${escapeHtml(situationText)}</span>
+            ${record.isToday === 1 ? '<span class="calendar-detail-badge is-today">今天</span>' : ''}
+          </div>
+          ${abnormalSummary}
+          <div class="calendar-detail-section-title">打卡明细</div>
+          <div class="calendar-detail-records">
+            ${signRows}
+          </div>
+        </div>
+      </div>
+    `;
   }
 
   /**
@@ -164,6 +285,7 @@ export class CalendarManager {
    * 清空日历
    */
   clear(): void {
+    this.hideDetailDialog();
     this.container.innerHTML = '';
   }
 }
